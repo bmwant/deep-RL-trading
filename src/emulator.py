@@ -42,7 +42,7 @@ class Market:
             self.prices = prices.copy()
             self.price = price / price[0] * 100
             self.t_max = len(self.price) - 1
-        print(self.price)
+        # print(self.price)
         self.max_profit = find_ideal(self.price[self.t0 :], False)
         self.t = self.t0
         self._step = 0
@@ -54,10 +54,10 @@ class Market:
         """
         if t is None:
             t = self.t
-        i = self._step
+        # i = self._step
         state = self.prices[t - self.window_state + 1 : t + 1, :].copy()
         # import pdb; pdb.set_trace()
-        print('shape', state.shape)
+        # print('shape', state.shape)
         for i in range(self.sampler.n_var):
             norm = np.mean(state[:, i])
             state[:, i] = (state[:, i] / norm - 1.0) * 100
@@ -107,6 +107,7 @@ class Market:
         self.t += 1
         self._step += 1
         done = self._step == self.size
+        done = self.t == self.t_max
         return (
             self.get_state(),
             reward,
