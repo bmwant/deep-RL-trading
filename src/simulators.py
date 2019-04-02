@@ -181,6 +181,74 @@ class Simulator:
 
 
 if __name__ == "__main__":
-    # print 'episode%i, init%i'%(1,2)
-    a = [1, 2, 3]
-    print(np.mean(a[-100:]))
+    import tempfile
+    from main import get_model
+    from sampler import PairSampler
+    from emulator import Market
+    from agents import Agent
+
+    tmp_dir = tempfile.TemporaryDirectory()
+
+    db = 'randjump_100,1(10, 30)[]_'
+    db_type = 'PairSamplerDB'
+    fld = os.path.join("..", "data", db_type, db + "A")
+    fhr = (10, 30)
+    n_section = 1
+    max_change_perc = 3.
+    noise_level = 5
+    game = 'randjump'
+    # sampler = PairSampler(
+    #     game=game,
+    #     window_episode=180,  # 31
+    #     forecast_horizon_range=fhr,
+    #     n_section=n_section,
+    #     noise_level=noise_level,
+    #     max_change_perc=max_change_perc,
+    #     windows_transform=[],
+    # )
+    sampler = PairSampler(
+        game='load',
+        fld=fld,
+    )
+    env = Market(
+        sampler=sampler,
+        window_state=40,
+        open_cost=0.0,
+    )
+    model_type = 'conv'
+    learning_rate = 1e-4
+    discount_factor = 0.8
+    batch_size = 8
+    fld_load = None
+    model, print_t = get_model(model_type, env, learning_rate, fld_load)
+    model.model.summary()
+
+    agent = Agent(
+        model, discount_factor=discount_factor, batch_size=batch_size
+    ) 
+    fld_save = tmp_dir.name 
+    s = Simulator(
+        agent=agent,
+        env=env,
+        visualizer=None,
+        fld_save=fld_save,
+    )
+    # cum_rewards, actions, states = s.play_one_episode(
+    #     exploration=0, print_t=True)
+    # print('rewards', cum_rewards)
+    # print('actions', actions)
+    print_t = True
+    n_episode_training = 1
+    exploration_decay = 0.99
+    exploration_min = 0.01
+    exploration_init = 1.0
+    print('Start training...')
+    s.train(
+        n_episode_training,
+        save_per_episode=1,
+        exploration_decay=exploration_decay,
+        exploration_min=exploration_min,
+        print_t=print_t,
+        exploration_init=exploration_init,
+    )
+    print('Done')

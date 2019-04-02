@@ -38,6 +38,7 @@ class Agent:
     def get_q_valid(self, state, valid_actions):
         q = self.model.predict(state)
         q_valid = [np.nan] * len(q)
+        # ^^ np.arange
         for action in valid_actions:
             q_valid[action] = q[action]
         return q_valid
