@@ -125,3 +125,5 @@ dmypy.json
 
 .idea/
 results/
+# exclude subdirectories
+data/*/

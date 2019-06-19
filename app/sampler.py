@@ -5,10 +5,12 @@ import pickle
 
 import numpy as np
 import pandas as pd
-from lib import *
 
 
 def read_data(date, instrument, time_step):
+    """
+    Seems like this one is unused
+    """
     path = os.path.join(PRICE_FLD, date, instrument+'.csv')
     if not os.path.exists(path):
         print('no such file: '+path)
@@ -26,11 +28,12 @@ class Sampler(object):
         self.n_db = None
         self.sample = None
         self.title = ''
+        self.attrs = []
 
     def load_db(self, fld):
         self.i_db = 0
-        self.db = pickle.load(open(os.path.join(fld, 'db.pickle'),'rb'))
-        param = json.load(open(os.path.join(fld, 'param.json'),'rb'))
+        self.db = pickle.load(open(os.path.join(fld, 'db.pickle'), 'rb'))
+        param = json.load(open(os.path.join(fld, 'param.json'), 'rb'))
         self.n_db = param['n_episodes']
         self.sample = self.__sample_db
         for attr in param:
@@ -42,14 +45,13 @@ class Sampler(object):
         db = []
         for i in range(n_episodes):
             prices, title = self.sample()
-            db.append((prices, '[%i]_'%i+title))
+            db.append((prices, '[{}]_{}'.format(i, title)))
         os.makedirs(fld)  # don't overwrite existing fld
-        pickle.dump(db, open(os.path.join(fld, 'db.pickle'),'wb'))
+        pickle.dump(db, open(os.path.join(fld, 'db.pickle'), 'wb'))
         param = {'n_episodes': n_episodes}
         for k in self.attrs:
             param[k] = getattr(self, k)
-        json.dump(param, open(os.path.join(fld, 'param.json'),'w'))
-
+        json.dump(param, open(os.path.join(fld, 'param.json'), 'w'))
 
     def __sample_db(self):
         prices, title = self.db[self.i_db]
@@ -280,11 +282,12 @@ def test_pair_sampler():
     max_change_perc = 30.  # max change from previous value (in percentage)
     noise_level = 5
     game = 'randjump'
+    window_episode = 180
     windows_transform = []  # no transformations
 
     sampler = PairSampler(
         game,
-        window_episode=180,  # length for the data generated
+        window_episode=window_episode,  # length for the data generated
         forecast_horizon_range=fhr,
         n_section=n_section,
         noise_level=noise_level,
@@ -294,15 +297,28 @@ def test_pair_sampler():
 
     # plt.plot(sampler.sample()[0])
     # plt.show()
-    #"""
-    n_episodes = 100
+
+    game_name = '{game}_{window_episode},{n_section}{fhr}{transforms}_{suffix}'.format(
+        game=game,
+        window_episode=window_episode,
+        n_section=n_section,
+        fhr=fhr,
+        transforms=windows_transform,
+        suffix='B',
+    )
+    # output directory
     fld = os.path.join(
         'data',
-        'PairSamplerDB',
-        game+'_%i,%i'%(n_episodes, n_section)+str(fhr)+str(windows_transform)+'_B',
+        'PairSamplerDBTest',
+        game_name,
     )
-    sampler.build_db(n_episodes, fld)
-    #"""
+    print('Generating data:')
+    print('\tNumber of episodes: {}'.format(window_episode))
+    print('\tNumber of sections?: {}'.format(n_section))
+    print('\tForecast horizon: {}'.format(fhr))
+    print('\tWindows transform?: {}'.format(windows_transform))
+    print('Writing data to directory:\n{}'.format(fld))
+    sampler.build_db(window_episode, fld)
 
 
 if __name__ == '__main__':

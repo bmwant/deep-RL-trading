@@ -1,4 +1,7 @@
-from lib import *
+import os
+import numpy as np
+
+from app.lib import makedirs
 
 
 class Simulator(object):
