@@ -1,7 +1,8 @@
 
 # **Playing trading games with deep reinforcement learning**
 
-This repo is the code for this [paper](https://arxiv.org/abs/1803.03916). Deep reinforcement learing is used to find optimal strategies in these two scenarios:
+This repo is the code for this [paper](https://arxiv.org/abs/1803.03916).
+Deep reinforcement learning is used to find optimal strategies in these two scenarios:
 * Momentum trading: capture the underlying dynamics
 * Arbitrage trading: utilize the hidden relation among the inputs
 
@@ -21,5 +22,11 @@ $ pyenv activate drl-trader
 Just call the main function
 
     python main.py
+
+* Testing data generation with sampler
+
+```bash
+$ 
+```
 
 You can play with model parameters (specified in main.py), if you get good results or any trouble, please contact me at gxiang1228@gmail.com

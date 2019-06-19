@@ -1,3 +1,7 @@
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+
 from lib import *
 
 
@@ -23,7 +27,7 @@ class Visualizer:
         safe_cum_rewards, safe_actions,
         fig_path):
 
-        f, axs = plt.subplots(3,1,sharex=True, figsize=(14,14))
+        f, axs = plt.subplots(3,1, sharex=True, figsize=(14,14))
         ax_price, ax_action, ax_Q = axs
 
         ls = ['-','--']
@@ -46,12 +50,12 @@ class Visualizer:
 
         style = ['k','r','b']
         qq = []
-        for t in xrange(env.t0):
+        for t in range(env.t0):
             qq.append([np.nan] * self.n_action)
-        for t in xrange(env.t0, env.t_max):
+        for t in range(env.t0, env.t_max):
             qq.append(model.predict(env.get_state(t)))
-        for i in xrange(self.n_action):
-            ax_Q.plot([float(qq[t][i]) for t in xrange(len(qq))],
+        for i in range(self.n_action):
+            ax_Q.plot([float(qq[t][i]) for t in range(len(qq))],
                 style[i], label=self.action_labels[i])
         ax_Q.set_ylabel('Q')
         ax_Q.legend(loc='best', frameon=False)

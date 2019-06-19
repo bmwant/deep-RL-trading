@@ -1,7 +1,12 @@
 from lib import *
 
 
-class Simulator:
+class Simulator(object):
+    def __init__(self, agent, env, visualizer, fld_save):
+        self.agent = agent
+        self.env = env
+        self.visualizer = visualizer
+        self.fld_save = fld_save  # directory where to save results
 
     def play_one_episode(self, exploration, training=True, rand_price=True, print_t=False):
 
@@ -38,12 +43,18 @@ class Simulator:
 
         return cum_rewards, actions, states
 
-    def train(self, n_episode,
-        save_per_episode=10, exploration_decay=0.995, exploration_min=0.01, print_t=False, exploration_init=1.):
-
-        fld_model = os.path.join(self.fld_save,'model')
-        makedirs(fld_model)	# don't overwrite if already exists
-        with open(os.path.join(fld_model,'QModel.txt'),'w') as f:
+    def train(
+        self,
+        n_episode,
+        save_per_episode=10,
+        exploration_decay=0.995,
+        exploration_min=0.01,
+        print_t=False,
+        exploration_init=1.,
+    ):
+        fld_model = os.path.join(self.fld_save, 'model')
+        makedirs(fld_model)	 # don't overwrite if already exists
+        with open(os.path.join(fld_model, 'QModel.txt'), 'w') as f:
             f.write(self.agent.model.qmodel)
 
         exploration = exploration_init
@@ -82,8 +93,7 @@ class Simulator:
                 f.write(','.join(ss)+'\n')
                 print('\t'.join(ss))
 
-
-            if n%save_per_episode == 0:
+            if n % save_per_episode == 0:
                 print('saving results...')
                 self.agent.save(fld_model)
 
@@ -101,35 +111,44 @@ class Simulator:
                     """
 
     def test(self, n_episode, save_per_episode=10, subfld='testing'):
-
+        """
+        Test on `n_episode` episodes
+        """
         fld_save = os.path.join(self.fld_save, subfld)
         makedirs(fld_save)
         MA_window = 100		# MA of performance
         safe_total_rewards = []
-        path_record = os.path.join(fld_save,'record.csv')
+        path_record = os.path.join(fld_save, 'record.csv')
 
-        with open(path_record,'w') as f:
+        with open(path_record, 'w') as f:
             f.write('episode,game,pnl,rel,MA\n')
 
         for n in range(n_episode):
             print('\ntesting...')
 
-            safe_cum_rewards, safe_actions, _ = self.play_one_episode(0, training=False, rand_price=True)
-            safe_total_rewards.append(100.*safe_cum_rewards[-1]/self.env.max_profit)
+            safe_cum_rewards, safe_actions, _ = self.play_one_episode(
+                0,
+                training=False,
+                rand_price=True,
+            )
+            rel_reward = 100. * safe_cum_rewards[-1] / self.env.max_profit
+            safe_total_rewards.append(rel_reward)
             MA_safe_total_rewards = np.median(safe_total_rewards[-MA_window:])
-            ss = [str(n), self.env.title.replace(',',';'),
-                '%.1f'%(safe_cum_rewards[-1]),
-                '%.1f'%(safe_total_rewards[-1]),
-                '%.1f'%MA_safe_total_rewards]
+            ss = [
+                str(n),  # number of episode
+                self.env.title.replace(',', ';'),
+                '%.1f' % (safe_cum_rewards[-1]),  # pnl, safe cumulative rewards
+                '%.1f' % (safe_total_rewards[-1]),  # safe total rewards
+                '%.1f' % MA_safe_total_rewards  # moving average on safe total rewards
+            ]
 
-            with open(path_record,'a') as f:
+            with open(path_record, 'a') as f:
                 f.write(','.join(ss)+'\n')
                 print('\t'.join(ss))
 
-
-            if n%save_per_episode == 0:
-                print('saving results...')
-
+            if n % save_per_episode == 0:
+                # print('saving results...')
+                # it's not saving anything here atm
                 """
                 self.visualizer.plot_a_episode(
                     self.env, self.agent.model, 
@@ -143,16 +162,7 @@ class Simulator:
                     MA_window)
                     """
 
-    def __init__(self, agent, env,
-        visualizer, fld_save):
-
-        self.agent = agent
-        self.env = env
-        self.visualizer = visualizer
-        self.fld_save = fld_save
-
 
 if __name__ == '__main__':
-    #print 'episode%i, init%i'%(1,2)
-    a = [1,2,3]
+    a = [1, 2, 3]
     print(np.mean(a[-100:]))

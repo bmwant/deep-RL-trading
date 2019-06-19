@@ -1,3 +1,9 @@
+import os
+import json
+import random
+import pickle
+
+import numpy as np
 import pandas as pd
 from lib import *
 
@@ -13,13 +19,18 @@ def read_data(date, instrument, time_step):
     return df['spot'].values
 
 
-class Sampler:
+class Sampler(object):
+    def __init__(self):
+        self.db = None
+        self.i_db = 0
+        self.n_db = None
+        self.sample = None
+        self.title = ''
 
     def load_db(self, fld):
-
+        self.i_db = 0
         self.db = pickle.load(open(os.path.join(fld, 'db.pickle'),'rb'))
         param = json.load(open(os.path.join(fld, 'param.json'),'rb'))
-        self.i_db = 0
         self.n_db = param['n_episodes']
         self.sample = self.__sample_db
         for attr in param:
@@ -32,9 +43,9 @@ class Sampler:
         for i in range(n_episodes):
             prices, title = self.sample()
             db.append((prices, '[%i]_'%i+title))
-        os.makedirs(fld)	# don't overwrite existing fld
+        os.makedirs(fld)  # don't overwrite existing fld
         pickle.dump(db, open(os.path.join(fld, 'db.pickle'),'wb'))
-        param = {'n_episodes':n_episodes}
+        param = {'n_episodes': n_episodes}
         for k in self.attrs:
             param[k] = getattr(self, k)
         json.dump(param, open(os.path.join(fld, 'param.json'),'w'))
@@ -49,26 +60,35 @@ class Sampler:
 
 
 class PairSampler(Sampler):
-
-    def __init__(self, game,
-        window_episode=None, forecast_horizon_range=None, max_change_perc=10., noise_level=10., n_section=1,
-        fld=None, windows_transform=[]):
-
+    def __init__(
+        self,
+        game,
+        window_episode=None,
+        forecast_horizon_range=None,
+        max_change_perc=10.,
+        noise_level=10.,
+        n_section=1,
+        fld=None,
+        windows_transform=None,
+    ):
+        super().__init__()
         self.window_episode = window_episode
         self.forecast_horizon_range = forecast_horizon_range
         self.max_change_perc = max_change_perc
         self.noise_level = noise_level
         self.n_section = n_section
-        self.windows_transform = windows_transform
-        self.n_var = 2 + len(self.windows_transform) # price, signal
+        self.windows_transform = windows_transform or []
+        self.n_var = 2 + len(self.windows_transform)  # price, signal
 
-        self.attrs = ['title', 'window_episode', 'forecast_horizon_range',
-            'max_change_perc', 'noise_level', 'n_section', 'n_var']
+        self.attrs = [
+            'title', 'window_episode', 'forecast_horizon_range',
+            'max_change_perc', 'noise_level', 'n_section', 'n_var'
+        ]
         param_str = str((self.noise_level, self.forecast_horizon_range, self.n_section, self.windows_transform))
 
         if game == 'load':
             self.load_db(fld)
-        elif game in ['randwalk','randjump']:
+        elif game in ['randwalk', 'randjump']:
             self.__rand = getattr(self, '_PairSampler__'+game)
             self.sample = self.__sample
             self.title = game + param_str
@@ -127,11 +147,17 @@ class PairSampler(Sampler):
 
 
 class SinSampler(Sampler):
-    def __init__(self, game,
-        window_episode=None, noise_amplitude_ratio=None, period_range=None, amplitude_range=None,
-        fld=None):
-
-        self.n_var = 1	# price only
+    def __init__(
+        self,
+        game,
+        window_episode=None,
+        noise_amplitude_ratio=None,
+        period_range=None,
+        amplitude_range=None,
+        fld=None,
+    ):
+        super().__init__()
+        self.n_var = 1  # price only
 
         self.window_episode = window_episode
         self.noise_amplitude_ratio = noise_amplitude_ratio
@@ -164,7 +190,6 @@ class SinSampler(Sampler):
             self.load_db(fld)
         else:
             raise ValueError
-
 
     def __rand_sin(self,
         period_range=None, amplitude_range=None, noise_amplitude_ratio=None, full_episode=False):
@@ -249,29 +274,40 @@ def test_SinSampler():
     sampler.build_db(n_episodes, fld)
 
 
-def test_PairSampler():
-    fhr = (10,30)
+def test_pair_sampler():
+    fhr = (10, 30)  # forecast horizon range
     n_section = 1
-    max_change_perc = 30.
+    max_change_perc = 30.  # max change from previous value (in percentage)
     noise_level = 5
     game = 'randjump'
-    windows_transform = []
+    windows_transform = []  # no transformations
 
-    sampler = PairSampler(game, window_episode=180, forecast_horizon_range=fhr,
-        n_section=n_section, noise_level=noise_level, max_change_perc=max_change_perc, windows_transform=windows_transform)
+    sampler = PairSampler(
+        game,
+        window_episode=180,  # length for the data generated
+        forecast_horizon_range=fhr,
+        n_section=n_section,
+        noise_level=noise_level,
+        max_change_perc=max_change_perc,
+        windows_transform=windows_transform,
+    )
 
-    #plt.plot(sampler.sample()[0]);plt.show()
+    # plt.plot(sampler.sample()[0])
+    # plt.show()
     #"""
     n_episodes = 100
-    fld = os.path.join('data','PairSamplerDB',
-        game+'_%i,%i'%(n_episodes, n_section)+str(fhr)+str(windows_transform)+'_B')
+    fld = os.path.join(
+        'data',
+        'PairSamplerDB',
+        game+'_%i,%i'%(n_episodes, n_section)+str(fhr)+str(windows_transform)+'_B',
+    )
     sampler.build_db(n_episodes, fld)
     #"""
 
 
 if __name__ == '__main__':
     #scan_match()
-    test_SinSampler()
+    # test_SinSampler()
     #p = [1,2,3,2,1,2,3]
     #print find_ideal(p)
-    test_PairSampler()
+    test_pair_sampler()
