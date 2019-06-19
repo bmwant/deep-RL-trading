@@ -1,3 +1,5 @@
+import matplotlib.pyplot as plt
+
 from lib import *
 
 
@@ -55,13 +57,13 @@ class Visualizer:
 
         style = ["k", "r", "b"]
         qq = []
-        for t in xrange(env.t0):
+        for t in range(env.t0):
             qq.append([np.nan] * self.n_action)
-        for t in xrange(env.t0, env.t_max):
+        for t in range(env.t0, env.t_max):
             qq.append(model.predict(env.get_state(t)))
-        for i in xrange(self.n_action):
+        for i in range(self.n_action):
             ax_Q.plot(
-                [float(qq[t][i]) for t in xrange(len(qq))],
+                [float(qq[t][i]) for t in range(len(qq))],
                 style[i],
                 label=self.action_labels[i],
             )
@@ -95,26 +97,20 @@ class Visualizer:
         tt = range(len(safe_total_rewards))
 
         if explored_total_rewards is not None:
-            ma = pd.rolling_median(
-                np.array(explored_total_rewards),
-                window=MA_window,
-                min_periods=1,
-            )
-            std = pd.rolling_std(
-                np.array(explored_total_rewards),
-                window=MA_window,
-                min_periods=3,
-            )
+            ma = pd.Series(np.array(explored_total_rewards)).rolling(MA_window).median()
+            std = pd.Series(np.array(explored_total_rewards)).rolling(MA_window).std()
             ax_reward.plot(tt, explored_total_rewards, "bv", fillstyle="none")
             ax_reward.plot(tt, ma, "b", label="explored ma", linewidth=2)
             ax_reward.plot(tt, std, "b--", label="explored std", linewidth=2)
 
-        ma = pd.rolling_median(
-            np.array(safe_total_rewards), window=MA_window, min_periods=1
-        )
-        std = pd.rolling_std(
-            np.array(safe_total_rewards), window=MA_window, min_periods=3
-        )
+        # ma = pd.rolling_median(
+        #     np.array(safe_total_rewards), window=MA_window, min_periods=1
+        # )
+        ma = pd.Series(np.array(safe_total_rewards)).rolling(MA_window).median()
+        # std = pd.rolling_std(
+        #     np.array(safe_total_rewards), window=MA_window, min_periods=3
+        # )
+        std = pd.Series(np.array(safe_total_rewards)).rolling(MA_window).std()
         ax_reward.plot(tt, safe_total_rewards, "ro", fillstyle="none")
         ax_reward.plot(tt, ma, "r", label="safe ma", linewidth=2)
         ax_reward.plot(tt, std, "r--", label="safe std", linewidth=2)
@@ -132,6 +128,7 @@ class Visualizer:
             ax_exploration.set_ylabel("exploration")
             ax_exploration.set_xlabel("episode")
 
+        print('Saving to', fig_path)
         plt.savefig(fig_path)
         plt.close()
 

@@ -21,44 +21,44 @@ def find_ideal(p, just_once):
         return best
 
 
-class Market:
+class Market(object):
     """
     state MA of prices, normalized using values at t
-        ndarray of shape (window_state, n_instruments * n_MA), i.e., 2D
+        ndarray of shape (window_size, n_instruments * n_MA), i.e., 2D
 					which is self.state_shape
-
-	action 			three action
-					0:	empty, don't open/close. 
-					1:	open a position
-					2: 	keep a position
+    action 	three actions
+        0:	empty, don't open/close. 
+        1:	open a position
+        2: 	keep a position
     """
 
-    def reset(self, rand_price=True):
+    def reset(self):
         self.empty = True
-        if rand_price:
-            prices, self.title = self.sampler.sample()
-            price = np.reshape(prices[:, 0], prices.shape[0])
-
-            self.prices = prices.copy()
-            self.price = price / price[0] * 100
-            self.t_max = len(self.price) - 1
+        prices = self._df[['buy', 'sale']].to_numpy()
+        # if rand_price:
+        # prices, self.title = self.sampler.sample()
+        price = np.reshape(prices[:, 0], prices.shape[0])
+        self.prices = prices.copy()
+        self.price = price / price[0] * 100
+        self.t_max = len(self.price) - 1
         # print(self.price)
         self.max_profit = find_ideal(self.price[self.t0 :], False)
         self.t = self.t0
         self._step = 0
+        self.amount = 0
         return self.get_state(), self.get_valid_actions()
 
     def get_state(self, t=None):
         """
-        State is a window of `window_state` days back
+        State is a window of `window_size` days back
         """
         if t is None:
             t = self.t
         # i = self._step
-        state = self.prices[t - self.window_state + 1 : t + 1, :].copy()
+        state = self.prices[t - self.window_size + 1 : t + 1, :].copy()
         # import pdb; pdb.set_trace()
         # print('shape', state.shape)
-        for i in range(self.sampler.n_var):
+        for i in range(self.n_var):
             norm = np.mean(state[:, i])
             state[:, i] = (state[:, i] / norm - 1.0) * 100
         return state
@@ -69,25 +69,12 @@ class Market:
         else:
             return [0, 2]  # we can buy or idle
 
-    def get_noncash_reward(self, t=None, empty=None):
-        if t is None:
-            t = self.t
-        if empty is None:
-            empty = self.empty
-        reward = self.direction * (self.price[t + 1] - self.price[t])
-        if empty:
-            reward -= self.open_cost
-        if reward < 0:
-            reward *= 1.0 + self.risk_averse
-        return reward
-
     def _get_current_rates(self):
         step = self._step
         row = self._df.iloc[[step]]
         return row['buy'].item(), row['sale'].item()
 
     def step(self, action):
-
         done = False
         rate_buy, rate_sale = self._get_current_rates()
 
@@ -106,7 +93,6 @@ class Market:
 
         self.t += 1
         self._step += 1
-        done = self._step == self.size
         done = self.t == self.t_max
         return (
             self.get_state(),
@@ -115,26 +101,27 @@ class Market:
             self.get_valid_actions(),
         )
 
-    def __init__(
-        self, sampler, window_state, open_cost, direction=1.0, risk_averse=0.0
-    ):
+    def __init__(self, window_size=31, total_days=365):
 
-        self.sampler = sampler
-        self.window_state = window_state
-        self.open_cost = open_cost
-        self.direction = direction
-        self.risk_averse = risk_averse
+        # self.sampler = sampler
+        self.window_size = window_size
+        self.total_days = total_days
+        # self.open_cost = open_cost
+        # self.direction = direction
+        # self.risk_averse = risk_averse
 
         self.n_action = 3
-        self.state_shape = (window_state, self.sampler.n_var)
+        self.n_var = 2
+        self.title = 'uah-usd-prices'
+        self.state_shape = (window_size, self.n_var)
         self.action_labels = ['idle', 'sell', 'buy']
-        self.t0 = window_state - 1
+        self.t0 = window_size - 1  # to be able look backwards
         self._df = load_year_dataframe(2018)
         self._df['date'] = pd.to_datetime(self._df['date'], format=DATE_FMT)
 
         self._df.sort_values(by=['date'], inplace=True)
         self._df.reset_index(drop=True, inplace=True)
-        self._df = self._df.head(180)
+        self._df = self._df.head(total_days)
         self._step = 0
         self.amount = 0
 
@@ -151,13 +138,12 @@ if __name__ == '__main__':
     fld = os.path.join("..", "data", db_type, db + "A")
     sampler = PairSampler("load", fld=fld)
     env = Market(
-        sampler=sampler,
-        window_state=31,
-        open_cost=0.0,
+        window_size=7,
+        total_days=31,
     )
     print(env.size)
     print(env._df)
 
-    state, valid_actions = env.reset(rand_price=True)
+    state, valid_actions = env.reset()
     print('State', state)
     print('Valid actions', valid_actions)

@@ -1,12 +1,13 @@
 from lib import *
+from visualizer import Visualizer
 
 
 class Simulator:
     def play_one_episode(
-        self, exploration, training=True, rand_price=True, print_t=False
+        self, exploration, training=True, print_t=False
     ):
 
-        state, valid_actions = self.env.reset(rand_price=rand_price)
+        state, valid_actions = self.env.reset()
         done = False
         env_t = 0
         try:
@@ -25,6 +26,7 @@ class Simulator:
 
             action = self.agent.act(state, exploration, valid_actions)
             next_state, reward, done, valid_actions = self.env.step(action)
+            # print('Getting reward', reward)
 
             cum_rewards.append(prev_cum_rewards + reward)
             prev_cum_rewards = cum_rewards[-1]
@@ -60,7 +62,7 @@ class Simulator:
         fld_save = os.path.join(self.fld_save, "training")
 
         makedirs(fld_save)
-        MA_window = 100  # MA of performance
+        MA_window = 14  # MA of performance
         safe_total_rewards = []
         explored_total_rewards = []
         explorations = []
@@ -70,23 +72,24 @@ class Simulator:
             f.write(
                 "episode,game,exploration,explored,safe,MA_explored,MA_safe\n"
             )
-
         for n in range(n_episode):
 
-            print("\ntraining...")
+            print('\n[%d] training...' % n)
             exploration = max(exploration_min, exploration * exploration_decay)
             explorations.append(exploration)
             explored_cum_rewards, explored_actions, _ = self.play_one_episode(
                 exploration, print_t=print_t
             )
+            # print('Env max profit is', self.env.max_profit)
             explored_total_rewards.append(
-                100.0 * explored_cum_rewards[-1] / self.env.max_profit
+                explored_cum_rewards[-1]
             )
+            # Safe - playing episode without exploration
             safe_cum_rewards, safe_actions, _ = self.play_one_episode(
-                0, training=False, rand_price=False, print_t=False
+                0, training=False, print_t=False
             )
             safe_total_rewards.append(
-                100.0 * safe_cum_rewards[-1] / self.env.max_profit
+                safe_cum_rewards[-1]
             )
 
             MA_total_rewards = np.median(explored_total_rewards[-MA_window:])
@@ -104,24 +107,29 @@ class Simulator:
 
             with open(path_record, "a") as f:
                 f.write(",".join(ss) + "\n")
-                print("\t".join(ss))
-
+            # print("\t".join(ss))
+            print(
+                'exploration: %.1f; '
+                'explored reward: %.1f; '
+                'safe reward: %.1f' % (
+                    exploration*100, 
+                    explored_total_rewards[-1],
+                    safe_total_rewards[-1],
+            )) 
             if n % save_per_episode == 0:
                 print("saving results...")
                 self.agent.save(fld_model)
 
-                """
-                self.visualizer.plot_a_episode(
-                    self.env, self.agent.model, 
-                    explored_cum_rewards, explored_actions,
-                    safe_cum_rewards, safe_actions,
-                    os.path.join(fld_save, 'episode_%i.png'%(n)))
+        self.visualizer.plot_a_episode(
+            self.env, self.agent.model, 
+            explored_cum_rewards, explored_actions,
+            safe_cum_rewards, safe_actions,
+            os.path.join(fld_save, 'episode_%i.png'%(n)))
 
-                self.visualizer.plot_episodes(
-                    explored_total_rewards, safe_total_rewards, explorations, 
-                    os.path.join(fld_save, 'total_rewards.png'),
-                    MA_window)
-                """
+        self.visualizer.plot_episodes(
+            explored_total_rewards, safe_total_rewards, explorations, 
+            os.path.join(fld_save, 'total_rewards.png'),
+            MA_window)
 
     def test(self, n_episode, save_per_episode=10, subfld="testing"):
 
@@ -138,7 +146,7 @@ class Simulator:
             print("\ntesting...")
 
             safe_cum_rewards, safe_actions, _ = self.play_one_episode(
-                0, training=False, rand_price=True
+                0, training=False,
             )
             safe_total_rewards.append(
                 100.0 * safe_cum_rewards[-1] / self.env.max_profit
@@ -206,18 +214,13 @@ if __name__ == "__main__":
     #     max_change_perc=max_change_perc,
     #     windows_transform=[],
     # )
-    sampler = PairSampler(
-        game='load',
-        fld=fld,
-    )
     env = Market(
-        sampler=sampler,
-        window_state=40,
-        open_cost=0.0,
+        window_size=31,
+        total_days=90,
     )
     model_type = 'conv'
     learning_rate = 1e-4
-    discount_factor = 0.8
+    discount_factor = 0.99
     batch_size = 8
     fld_load = None
     model, print_t = get_model(model_type, env, learning_rate, fld_load)
@@ -227,20 +230,23 @@ if __name__ == "__main__":
         model, discount_factor=discount_factor, batch_size=batch_size
     ) 
     fld_save = tmp_dir.name 
+    fld_save = os.path.join('..', 'results', 'tst')
+    visualizer = Visualizer(env.action_labels)
     s = Simulator(
         agent=agent,
         env=env,
-        visualizer=None,
+        visualizer=visualizer,
         fld_save=fld_save,
     )
     # cum_rewards, actions, states = s.play_one_episode(
     #     exploration=0, print_t=True)
     # print('rewards', cum_rewards)
     # print('actions', actions)
-    print_t = True
-    n_episode_training = 1
-    exploration_decay = 0.99
-    exploration_min = 0.01
+    print_t = False
+    n_episode_training = 1000
+    n_episode_testing = 1
+    exploration_decay = 0.999
+    exploration_min = 0.05
     exploration_init = 1.0
     print('Start training...')
     s.train(
@@ -250,5 +256,9 @@ if __name__ == "__main__":
         exploration_min=exploration_min,
         print_t=print_t,
         exploration_init=exploration_init,
+    )
+    print('Testing...')
+    s.test(
+        n_episode_testing, save_per_episode=1, subfld="testing"
     )
     print('Done')
