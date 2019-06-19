@@ -12,9 +12,10 @@ Several neural networks are compared:
 
 ### Dependencies
 
-You can get all dependencies via the [Anaconda](https://conda.io/docs/user-guide/tasks/manage-environments.html#creating-an-environment-from-an-environment-yml-file) environment file, [env.yml](https://github.com/golsun/deep-RL-time-series/blob/master/env.yml):
-
-    conda env create -f env.yml
+```bash
+$ pyenv local 3.6.7
+$ pyenv activate drl-trader
+```
 
 ### Play with it
 Just call the main function
