@@ -56,16 +56,18 @@ class Market(object):
         self.state_shape = (window_state, self.sampler.n_var)
         # labels for actions
         self.action_labels = ['empty', 'open', 'keep']
-        self.t0 = window_state - 1  # todo: ?
-        self.t = None  # todo: ?
+        # initial time step
+        # we need `window_state` days to look back, so starting here
+        self.t0 = window_state - 1
+        self.t = None  # current time step
         self.t_max = None  # maximum possible time step
         self.empty = True
 
         # Initialization fields
         self.max_profit = 0
         self.title = ''
-        self.price = []  # ndarray for normalized price dataset
         self.prices = []  # ndarray for the data from sampler
+        self.prices_norm = []  # ndarray for normalized price dataset
 
     def reset(self, rand_price=True):
         self.empty = True
@@ -74,20 +76,26 @@ class Market(object):
             price = np.reshape(prices[:, 0], prices.shape[0])
 
             self.prices = prices.copy()
-            self.price = price / price[0] * 100
-            self.t_max = len(self.price) - 1
+            self.prices_norm = price / price[0] * 100
+            self.t_max = len(self.prices_norm) - 1
 
-        # assuming opening positions on each time it will be successful
-        self.max_profit = find_ideal(self.price[self.t0:])
+        # assuming we open positions on each time they will be successful
+        self.max_profit = find_ideal(self.prices_norm[self.t0:])
+        # starting time step equals to `t0` to have `window_state`
+        # history lookup
         self.t = self.t0
         return self.get_state(), self.get_valid_actions()
 
     def get_state(self, t=None):
+        """
+        Get normalized values of prices for the given `window_state` days range
+        """
         if t is None:
             t = self.t
         state = self.prices[t - self.window_state + 1: t + 1, :].copy()
         for i in range(self.sampler.n_var):
             norm = np.mean(state[:, i])
+            # todo: not sure why do we need exactly this normalization
             state[:, i] = (state[:, i]/norm - 1.)*100
         return state
 
@@ -102,7 +110,7 @@ class Market(object):
             t = self.t
         if empty is None:
             empty = self.empty
-        reward = self.direction * (self.price[t+1] - self.price[t])
+        reward = self.direction * (self.prices_norm[t+1] - self.prices_norm[t])
         if empty:
             reward -= self.open_cost
         if reward < 0:
@@ -111,7 +119,7 @@ class Market(object):
 
     def step(self, action):
         done = False
-        if action == 0:		# wait/close
+        if action == 0:  # wait/close
             reward = 0.
             self.empty = True
         elif action == 1:  # open

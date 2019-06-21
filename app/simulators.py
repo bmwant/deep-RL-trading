@@ -20,6 +20,7 @@ class Simulator(object):
         rand_price=True,
         print_t=False,
     ):
+        print('Playing one episode with rand price', rand_price)
         state, valid_actions = self.env.reset(rand_price=rand_price)
         done = False
         env_t = 0
@@ -73,21 +74,31 @@ class Simulator(object):
 
         safe_total_rewards = []
         explored_total_rewards = []
-        explorations = []
+        explorations = []  # store to visualize later
         path_record = os.path.join(fld_save, 'record.csv')
 
         with open(path_record, 'w') as f:
             f.write('episode,game,exploration,explored,safe,MA_explored,MA_safe\n')
 
         for n in range(n_episode):
-            print('\ntraining...')
+            print('{}/{} training...'.format(n, n_episode))
             exploration = max(exploration_min, exploration * exploration_decay)
             explorations.append(exploration)
-            explored_cum_rewards, explored_actions, _ = self.play_one_episode(exploration, print_t=print_t)
+            explored_cum_rewards, explored_actions, _ = self.play_one_episode(
+                exploration,
+                print_t=print_t,
+            )
             explored_total_rewards.append(100.*explored_cum_rewards[-1]/self.env.max_profit)
+
             # Safe values: exploration is completely disabled
-            safe_cum_rewards, safe_actions, _ = self.play_one_episode(0, training=False, rand_price=False, print_t=False)
-            safe_total_rewards.append(100.*safe_cum_rewards[-1]/self.env.max_profit)
+            safe_cum_rewards, safe_actions, _ = self.play_one_episode(
+                exploration=0,  # exploit existing model
+                training=False,  # do not append to replay buffer
+                rand_price=False,  # reuse previous sampled prices
+                print_t=False,
+            )
+            safe_total_rewards.append(
+                safe_cum_rewards[-1]/self.env.max_profit*100.)
 
             MA_total_rewards = np.median(
                 explored_total_rewards[-self.ma_window:])

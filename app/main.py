@@ -24,8 +24,11 @@ def get_model(model_type, env, learning_rate, fld_load):
         layers = 5
         hidden_size = [m]*layers
         model = QModelMLP(env.state_shape, env.n_action)
-        model.build_model(hidden_size, learning_rate=learning_rate, activation='tanh')
-
+        model.build_model(
+            hidden_size,
+            learning_rate=learning_rate,
+            activation='tanh',
+        )
     elif model_type == 'conv':
         m = 16
         layers = 2
@@ -46,21 +49,19 @@ def get_model(model_type, env, learning_rate, fld_load):
             dilation=dilation,
             use_pool=use_pool,
         )
-
     elif model_type == 'RNN':
         m = 32
         layers = 3
         hidden_size = [m]*layers
-        dense_units = [m,m]
+        dense_units = [m, m]
         model = QModelGRU(env.state_shape, env.n_action)
         model.build_model(hidden_size, dense_units, learning_rate=learning_rate)
         print_t = True
-
     elif model_type == 'ConvRNN':
         m = 8
-        conv_n_hidden = [m,m]
-        RNN_n_hidden = [m,m]
-        dense_units = [m,m]
+        conv_n_hidden = [m, m]
+        RNN_n_hidden = [m, m]
+        dense_units = [m, m]
         model = QModelConvGRU(env.state_shape, env.n_action)
         model.build_model(
             conv_n_hidden,
@@ -69,10 +70,8 @@ def get_model(model_type, env, learning_rate, fld_load):
             learning_rate=learning_rate,
         )
         print_t = True
-
     elif model_type == 'pretrained':
         agent.model = load_model(fld_load, learning_rate)
-
     else:
         raise ValueError('Incorrect model type was selected')
 
