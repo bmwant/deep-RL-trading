@@ -25,11 +25,32 @@ class Market(object):
                     1:	open a position
                     2: 	keep a position
     """
+    def __init__(
+        self,
+        sampler,
+        window_state,
+        open_cost,
+        direction=1.,
+        risk_averse=0.
+    ):
+        self.sampler = sampler
+        self.window_state = window_state
+        self.open_cost = open_cost
+        self.direction = direction
+        self.risk_averse = risk_averse
+
+        self.n_action = 3
+        self.state_shape = (window_state, self.sampler.n_var)
+        self.action_labels = ['empty', 'open', 'keep']
+        self.t0 = window_state - 1
+        self.empty = True
+
     def reset(self, rand_price=True):
         self.empty = True
         if rand_price:
             prices, self.title = self.sampler.sample()
-            price = np.reshape(prices[:,0], prices.shape[0])
+            print('===>', prices, self.title)
+            price = np.reshape(prices[:, 0], prices.shape[0])
 
             self.prices = prices.copy()
             self.price = price/price[0]*100
@@ -44,15 +65,15 @@ class Market(object):
             t = self.t
         state = self.prices[t - self.window_state + 1: t + 1, :].copy()
         for i in range(self.sampler.n_var):
-            norm = np.mean(state[:,i])
-            state[:,i] = (state[:,i]/norm - 1.)*100
+            norm = np.mean(state[:, i])
+            state[:, i] = (state[:, i]/norm - 1.)*100
         return state
 
     def get_valid_actions(self):
         if self.empty:
-            return [0, 1]	# wait, open
+            return [0, 1]  # wait, open
         else:
-            return [0, 2]	# close, keep
+            return [0, 2]  # close, keep
 
     def get_noncash_reward(self, t=None, empty=None):
         if t is None:
@@ -67,33 +88,17 @@ class Market(object):
         return reward
 
     def step(self, action):
-
         done = False
         if action == 0:		# wait/close
             reward = 0.
             self.empty = True
-        elif action == 1:	# open
+        elif action == 1:  # open
             reward = self.get_noncash_reward()
             self.empty = False
-        elif action == 2:	# keep
+        elif action == 2:  # keep
             reward = self.get_noncash_reward()
         else:
             raise ValueError('no such action: '+str(action))
 
         self.t += 1
         return self.get_state(), reward, self.t == self.t_max, self.get_valid_actions()
-
-    def __init__(self,
-        sampler, window_state, open_cost,
-        direction=1., risk_averse=0.):
-
-        self.sampler = sampler
-        self.window_state = window_state
-        self.open_cost = open_cost
-        self.direction = direction
-        self.risk_averse = risk_averse
-
-        self.n_action = 3
-        self.state_shape = (window_state, self.sampler.n_var)
-        self.action_labels = ['empty','open','keep']
-        self.t0 = window_state - 1

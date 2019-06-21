@@ -61,16 +61,16 @@ class Simulator(object):
             f.write(self.agent.model.qmodel)
 
         exploration = exploration_init
-        fld_save = os.path.join(self.fld_save,'training')
+        fld_save = os.path.join(self.fld_save, 'training')
 
         makedirs(fld_save)
         MA_window = 100		# MA of performance
         safe_total_rewards = []
         explored_total_rewards = []
         explorations = []
-        path_record = os.path.join(fld_save,'record.csv')
+        path_record = os.path.join(fld_save, 'record.csv')
 
-        with open(path_record,'w') as f:
+        with open(path_record, 'w') as f:
             f.write('episode,game,exploration,explored,safe,MA_explored,MA_safe\n')
 
         for n in range(n_episode):
@@ -87,12 +87,16 @@ class Simulator(object):
             MA_safe_total_rewards = np.median(safe_total_rewards[-MA_window:])
 
             ss = [
-                str(n), self.env.title.replace(',',';'), '%.1f'%(exploration*100.),
-                '%.1f'%(explored_total_rewards[-1]), '%.1f'%(safe_total_rewards[-1]),
-                '%.1f'%MA_total_rewards, '%.1f'%MA_safe_total_rewards,
-                ]
+                str(n),
+                self.env.title.replace(',', ';'),
+                '%.1f' % (exploration*100.),  # exploration factor
+                '%.1f' % (explored_total_rewards[-1]),  # explored rewards
+                '%.1f' % (safe_total_rewards[-1]),  # safe rewards
+                '%.1f' % MA_total_rewards,  # MA explored rewards
+                '%.1f' % MA_safe_total_rewards,  # MA safe rewards
+            ]
 
-            with open(path_record,'a') as f:
+            with open(path_record, 'a') as f:
                 f.write(','.join(ss)+'\n')
                 print('\t'.join(ss))
 
@@ -106,12 +110,15 @@ class Simulator(object):
                     explored_cum_rewards, explored_actions,
                     safe_cum_rewards, safe_actions,
                     os.path.join(fld_save, 'episode_%i.png'%(n)))
-
-                self.visualizer.plot_episodes(
-                    explored_total_rewards, safe_total_rewards, explorations, 
-                    os.path.join(fld_save, 'total_rewards.png'),
-                    MA_window)
-                    """
+                """
+        print('Plotting episodes', fld_save)
+        self.visualizer.plot_episodes(
+            explored_total_rewards,
+            safe_total_rewards,
+            explorations,
+            os.path.join(fld_save, 'total_rewards.png'),
+            MA_window,
+        )
 
     def test(self, n_episode, save_per_episode=10, subfld='testing'):
         """

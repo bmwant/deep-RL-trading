@@ -20,19 +20,23 @@ class Visualizer(object):
         self.n_action = len(action_labels)
         self.action_labels = action_labels
 
-    def plot_a_episode(self,
-        env, model,
-        explored_cum_rewards, explored_actions,
-        safe_cum_rewards, safe_actions,
-        fig_path):
-
+    def plot_a_episode(
+        self,
+        env,
+        model,
+        explored_cum_rewards,
+        explored_actions,
+        safe_cum_rewards,
+        safe_actions,
+        fig_path,
+    ):
         f, axs = plt.subplots(3, 1, sharex=True, figsize=(14,14))
         ax_price, ax_action, ax_Q = axs
 
-        ls = ['-','--']
-        for i in range(min(2,env.prices.shape[1])):
+        ls = ['-', '--']
+        for i in range(min(2, env.prices.shape[1])):
             p = env.prices[:,i]/env.prices[0,i]*100 - 100
-            ax_price.plot(p, 'k'+ls[i], label='input%i - 100'%i)
+            ax_price.plot(p, 'k'+ls[i], label='input%i - 100' % i)
 
         ax_price.plot(explored_cum_rewards, 'b', label='explored P&L')
         ax_price.plot(safe_cum_rewards, 'r', label='safe P&L')
@@ -47,7 +51,7 @@ class Visualizer(object):
         ax_action.set_yticks(range(self.n_action))
         ax_action.legend(loc='best', frameon=False)
 
-        style = ['k','r','b']
+        style = ['k', 'r', 'b']
         qq = []
         for t in range(env.t0):
             qq.append([np.nan] * self.n_action)
@@ -64,11 +68,15 @@ class Visualizer(object):
         plt.savefig(fig_path)
         plt.close()
 
-    def plot_episodes(self,
-        explored_total_rewards, safe_total_rewards, explorations,
-        fig_path, MA_window=100):
-
-        f = plt.figure(figsize=(14,10))	# width, height in inch (100 pixel)
+    def plot_episodes(
+        self,
+        explored_total_rewards,
+        safe_total_rewards,
+        explorations,
+        fig_path,
+        MA_window=100,
+    ):
+        f = plt.figure(figsize=(14, 10))	 # width, height in inch (100 pixel)
         if explored_total_rewards is None:
             f, ax_reward = plt.subplots()
         else:
@@ -97,7 +105,7 @@ class Visualizer(object):
         ax_reward.legend(loc='best', frameon=False)
         ax_reward.yaxis.tick_right()
         ylim = ax_reward.get_ylim()
-        ax_reward.set_ylim((max(-100,ylim[0]), min(100,ylim[1])))
+        ax_reward.set_ylim((max(-100, ylim[0]), min(100, ylim[1])))
 
         if explored_total_rewards is not None:
             ax_exploration.plot(tt, np.array(explorations)*100., 'k')
@@ -131,7 +139,6 @@ class VisualizerSequential:
 class VisualizerConv1D(VisualizerSequential):
 
     def config(self):
-
         self.n_channel = self.model.input.shape[2]
         n_col = self.n_channel
         for layer in self.layers:
@@ -191,7 +198,7 @@ def test_visualizer():
         ax = plt.subplot2grid((nrow, ncol), (row, col))
         cax = ax.matshow(np.random.random((2, 2)), cmap='RdYlBu_r', clim=clim)
 
-    ax = plt.subplot2grid((nrow, ncol), (0, 0), colspan=ncol - 1)
+    ax = plt.subplot2grid((nrow, ncol), (0, 0), colspan=ncol-1)
     cbar = f.colorbar(cax, ax=ax)
 
     plt.show()

@@ -1,6 +1,6 @@
 import os
 
-from app.lib import OUTPUT_FLD
+from app.lib import OUTPUT_FLD, ROOT_DIR
 from app.sampler import PairSampler
 from app.visualizer import Visualizer
 from app.emulator import Market
@@ -85,8 +85,8 @@ def main():
     """
     model_type = 'conv'  # default model type
     fld_load = None
-    n_episode_training = 1000  # number of training episodes
-    n_episode_testing = 100  # number of testing episodes
+    n_episode_training = 10  # number of training episodes
+    n_episode_testing = 20  # number of testing episodes
     open_cost = 3.3  # cost of opening a bid
     #db_type = 'SinSamplerDB'; db = 'concat_half_base_'; Sampler = SinSampler
 
@@ -95,7 +95,7 @@ def main():
     db = 'randjump_100,1(10, 30)[]_'
     Sampler = PairSampler
     # directory for the data to load from
-    fld = os.path.join('..', 'data', db_type, db+'A')
+    fld = os.path.join(ROOT_DIR, 'data', db_type, db+'A')
     # load data from directory specified
     sampler = Sampler('load', fld=fld)
 

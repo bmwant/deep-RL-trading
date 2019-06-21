@@ -104,7 +104,7 @@ class PairSampler(Sampler):
 
     def __randjump(self, l):
         change = [0.] * (l + self.forecast_horizon_range[1])
-        n_jump = random.randrange(15,30)
+        n_jump = random.randrange(15, 30)
         for i in range(n_jump):
             t = random.randrange(len(change))
             change[t] = (np.random.random() - 0.5) * 2 * self.max_change_perc/100

@@ -19,9 +19,12 @@ $ pyenv activate drl-trader
 ```
 
 ### Play with it
-Just call the main function
 
-    python main.py
+* Launch main script
+
+```bash
+$ python app/main.py
+```
 
 * Testing data generation with sampler
 
