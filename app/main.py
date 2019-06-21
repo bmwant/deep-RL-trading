@@ -5,6 +5,7 @@ from app.sampler import PairSampler, SinSampler
 from app.visualizer import Visualizer
 from app.emulator import Market
 from app.simulators import Simulator
+from app.agents import load_model
 from app.agents import (
     Agent,
     QModelConv,
@@ -15,7 +16,6 @@ from app.agents import (
 
 
 def get_model(model_type, env, learning_rate, fld_load):
-
     print_t = False
     exploration_init = 1.
 
@@ -36,7 +36,7 @@ def get_model(model_type, env, learning_rate, fld_load):
         use_pool = None
         #dilation = [1,2,4,8]
         dilation = None
-        dense_units = [48,24]
+        dense_units = [48, 24]
         model = QModelConv(env.state_shape, env.n_action)
         model.build_model(
             filter_num,
@@ -74,7 +74,7 @@ def get_model(model_type, env, learning_rate, fld_load):
         agent.model = load_model(fld_load, learning_rate)
 
     else:
-        raise ValueError
+        raise ValueError('Incorrect model type was selected')
 
     return model, print_t
 

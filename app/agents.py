@@ -180,6 +180,7 @@ class QModelLSTM(QModelRNN):
 class QModelGRU(QModelRNN):
     def init(self):
         self.qmodel = 'GRU'
+
     def build_model(self, n_hidden, dense_units, learning_rate, activation='relu'):
         Layer = keras.layers.GRU
         self._build_model(Layer, n_hidden, dense_units, learning_rate, activation)
@@ -192,10 +193,16 @@ class QModelConv(QModelKeras):
     def init(self):
         self.qmodel = 'Conv'
 
-    def build_model(self,
-        filter_num, filter_size, dense_units,
-        learning_rate, activation='relu', dilation=None, use_pool=None):
-
+    def build_model(
+        self,
+        filter_num,
+        filter_size,
+        dense_units,
+        learning_rate,
+        activation='relu',
+        dilation=None,
+        use_pool=None,
+    ):
         if use_pool is None:
             use_pool = [True]*len(filter_num)
         if dilation is None:
@@ -256,6 +263,7 @@ class QModelConvRNN(QModelKeras):
 class QModelConvLSTM(QModelConvRNN):
     def init(self):
         self.qmodel = 'ConvLSTM'
+
     def build_model(self, conv_n_hidden, RNN_n_hidden, dense_units, learning_rate,
         conv_kernel_size=3, use_pool=False, activation='relu'):
         Layer = keras.layers.LSTM
@@ -275,13 +283,13 @@ class QModelConvGRU(QModelConvRNN):
 
 
 def load_model(fld, learning_rate):
-    s = open(os.path.join(fld,'QModel.txt'),'r').read().strip()
+    s = open(os.path.join(fld,'QModel.txt'), 'r').read().strip()
     qmodels = {
-        'Conv':QModelConv,
-        'DenseOnly':QModelMLP,
-        'MLP':QModelMLP,
-        'LSTM':QModelLSTM,
-        'GRU':QModelGRU,
+        'Conv': QModelConv,
+        'DenseOnly': QModelMLP,
+        'MLP': QModelMLP,
+        'LSTM': QModelLSTM,
+        'GRU': QModelGRU,
     }
     qmodel = qmodels[s](None, None)
     qmodel.load(fld, learning_rate)

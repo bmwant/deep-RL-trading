@@ -5,14 +5,21 @@ from app.lib import makedirs
 
 
 class Simulator(object):
-    def __init__(self, agent, env, visualizer, fld_save):
+    def __init__(self, agent, env, visualizer, fld_save, ma_window: int = 100):
         self.agent = agent
         self.env = env
+        # range for moving average window
+        self.ma_window = ma_window
         self.visualizer = visualizer
         self.fld_save = fld_save  # directory where to save results
 
-    def play_one_episode(self, exploration, training=True, rand_price=True, print_t=False):
-
+    def play_one_episode(
+        self,
+        exploration,
+        training=True,
+        rand_price=True,
+        print_t=False,
+    ):
         state, valid_actions = self.env.reset(rand_price=rand_price)
         done = False
         env_t = 0
@@ -62,9 +69,8 @@ class Simulator(object):
 
         exploration = exploration_init
         fld_save = os.path.join(self.fld_save, 'training')
-
         makedirs(fld_save)
-        MA_window = 100		# MA of performance
+
         safe_total_rewards = []
         explored_total_rewards = []
         explorations = []
@@ -74,17 +80,19 @@ class Simulator(object):
             f.write('episode,game,exploration,explored,safe,MA_explored,MA_safe\n')
 
         for n in range(n_episode):
-
             print('\ntraining...')
             exploration = max(exploration_min, exploration * exploration_decay)
             explorations.append(exploration)
             explored_cum_rewards, explored_actions, _ = self.play_one_episode(exploration, print_t=print_t)
             explored_total_rewards.append(100.*explored_cum_rewards[-1]/self.env.max_profit)
+            # Safe values: exploration is completely disabled
             safe_cum_rewards, safe_actions, _ = self.play_one_episode(0, training=False, rand_price=False, print_t=False)
             safe_total_rewards.append(100.*safe_cum_rewards[-1]/self.env.max_profit)
 
-            MA_total_rewards = np.median(explored_total_rewards[-MA_window:])
-            MA_safe_total_rewards = np.median(safe_total_rewards[-MA_window:])
+            MA_total_rewards = np.median(
+                explored_total_rewards[-self.ma_window:])
+            MA_safe_total_rewards = np.median(
+                safe_total_rewards[-self.ma_window:])
 
             ss = [
                 str(n),
@@ -117,7 +125,7 @@ class Simulator(object):
             safe_total_rewards,
             explorations,
             os.path.join(fld_save, 'total_rewards.png'),
-            MA_window,
+            self.ma_window,
         )
 
     def test(self, n_episode, save_per_episode=10, subfld='testing'):
@@ -126,7 +134,6 @@ class Simulator(object):
         """
         fld_save = os.path.join(self.fld_save, subfld)
         makedirs(fld_save)
-        MA_window = 100		# MA of performance
         safe_total_rewards = []
         path_record = os.path.join(fld_save, 'record.csv')
 
@@ -143,7 +150,8 @@ class Simulator(object):
             )
             rel_reward = 100. * safe_cum_rewards[-1] / self.env.max_profit
             safe_total_rewards.append(rel_reward)
-            MA_safe_total_rewards = np.median(safe_total_rewards[-MA_window:])
+            MA_safe_total_rewards = np.median(
+                safe_total_rewards[-self.ma_window:])
             ss = [
                 str(n),  # number of episode
                 self.env.title.replace(',', ';'),

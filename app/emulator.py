@@ -19,14 +19,16 @@ def find_ideal(p, just_once=False):
 
 class Market(object):
     """
-    state 			MA of prices, normalized using values at t
-                    ndarray of shape (window_state, n_instruments * n_MA), i.e., 2D
-                    which is self.state_shape
+    state
+        MA of prices, normalized using values at t
+        ndarray of shape (window_state, n_instruments * n_MA), i.e., 2D
+        which is self.state_shape
 
-    action 			three action
-                    0:	empty, don't open/close.
-                    1:	open a position
-                    2: 	keep a position
+    action
+        three actions
+        0:	empty, don't open/close.
+        1:	open a position
+        2: 	keep a position
     """
     def __init__(
         self,
@@ -36,30 +38,47 @@ class Market(object):
         direction=1.,
         risk_averse=0.
     ):
+        # where to get data from
         self.sampler = sampler
+        # how many days (records) of history we can lookup
         self.window_state = window_state
+        # price for position opening
         self.open_cost = open_cost
-        self.direction = direction
-        self.risk_averse = risk_averse
 
+        # just default values
+        self.direction = direction  # 1.
+        self.risk_averse = risk_averse  # 0.
+
+        # number of possible actions
         self.n_action = 3
+        # shape of a state
+        # e.g. (40, 1) for univariate and (40, 2) for bivariate
         self.state_shape = (window_state, self.sampler.n_var)
+        # labels for actions
         self.action_labels = ['empty', 'open', 'keep']
-        self.t0 = window_state - 1
+        self.t0 = window_state - 1  # todo: ?
+        self.t = None  # todo: ?
+        self.t_max = None  # maximum possible time step
         self.empty = True
+
+        # Initialization fields
+        self.max_profit = 0
+        self.title = ''
+        self.price = []  # ndarray for normalized price dataset
+        self.prices = []  # ndarray for the data from sampler
 
     def reset(self, rand_price=True):
         self.empty = True
         if rand_price:
             prices, self.title = self.sampler.sample()
-            import pdb; pdb.set_trace()
             price = np.reshape(prices[:, 0], prices.shape[0])
 
             self.prices = prices.copy()
-            self.price = price/price[0]*100
+            self.price = price / price[0] * 100
             self.t_max = len(self.price) - 1
 
-        self.max_profit = find_ideal(self.price[self.t0:], False)
+        # assuming opening positions on each time it will be successful
+        self.max_profit = find_ideal(self.price[self.t0:])
         self.t = self.t0
         return self.get_state(), self.get_valid_actions()
 
@@ -101,7 +120,12 @@ class Market(object):
         elif action == 2:  # keep
             reward = self.get_noncash_reward()
         else:
-            raise ValueError('no such action: '+str(action))
+            raise ValueError('No such action: %s' % action)
 
         self.t += 1
-        return self.get_state(), reward, self.t == self.t_max, self.get_valid_actions()
+        return (
+            self.get_state(),  # state
+            reward,  # reward
+            self.t == self.t_max,  # done?
+            self.get_valid_actions()  # allowed actions
+        )

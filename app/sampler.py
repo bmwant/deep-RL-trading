@@ -6,6 +6,8 @@ import pickle
 import numpy as np
 import pandas as pd
 
+from app.lib import ROOT_DIR
+
 
 def read_data(date, instrument, time_step):
     """
@@ -55,7 +57,6 @@ class Sampler(object):
 
     def __sample_db(self):
         prices, title = self.db[self.i_db]
-        import pdb; pdb.set_trace()
         self.i_db += 1
         if self.i_db == self.n_db:
             self.i_db = 0
@@ -201,9 +202,13 @@ class SinSampler(Sampler):
         else:
             raise ValueError
 
-    def __rand_sin(self,
-        period_range=None, amplitude_range=None, noise_amplitude_ratio=None, full_episode=False):
-
+    def __rand_sin(
+        self,
+        period_range=None,
+        amplitude_range=None,
+        noise_amplitude_ratio=None,
+        full_episode=False,
+    ):
         if period_range is None:
             period_range = self.period_range
         if amplitude_range is None:
@@ -262,8 +267,7 @@ class SinSampler(Sampler):
         return np.array(prices).T, str(funcs)
 
 
-def test_SinSampler():
-
+def test_sin_sampler():
     window_episode = 180
     window_state = 40
     noise_amplitude_ratio = 0.5
@@ -272,15 +276,25 @@ def test_SinSampler():
     game = 'concat_half_base'
     instruments = ['fake']
 
-    sampler = SinSampler(game,
-        window_episode, noise_amplitude_ratio, period_range, amplitude_range)
+    sampler = SinSampler(
+        game,
+        window_episode,
+        noise_amplitude_ratio,
+        period_range,
+        amplitude_range,
+    )
     n_episodes = 100
     """
     for i in range(100):
         plt.plot(sampler.sample(instruments)[0])
         plt.show()
         """
-    fld = os.path.join('data','SinSamplerDB',game+'_B')
+    fld = os.path.join(
+        ROOT_DIR,
+        'data',
+        'SinSamplerDB',
+        game+'_B',
+    )
     sampler.build_db(n_episodes, fld)
 
 
@@ -316,6 +330,7 @@ def test_pair_sampler():
     )
     # output directory
     fld = os.path.join(
+        ROOT_DIR,
         'data',
         'PairSamplerDBTest',
         game_name,
@@ -330,8 +345,5 @@ def test_pair_sampler():
 
 
 if __name__ == '__main__':
-    #scan_match()
-    # test_SinSampler()
-    #p = [1,2,3,2,1,2,3]
-    #print find_ideal(p)
+    # test_sin_sampler()
     test_pair_sampler()
