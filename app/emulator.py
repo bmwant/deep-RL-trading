@@ -1,13 +1,16 @@
 import numpy as np
 
 
-def find_ideal(p, just_once):
+def find_ideal(p, just_once=False):
+    """
+    Find all possible successful price differences either for one day step
+    for the whole dataset or just one biggest difference across the data.
+    """
     if not just_once:
         diff = np.array(p[1:]) - np.array(p[:-1])
         return sum(np.maximum(np.zeros(diff.shape), diff))
     else:
         best = 0.
-        i0_best = None
         for i in range(len(p)-1):
             best = max(best, max(p[i+1:]) - p[i])
 
@@ -49,7 +52,7 @@ class Market(object):
         self.empty = True
         if rand_price:
             prices, self.title = self.sampler.sample()
-            print('===>', prices, self.title)
+            import pdb; pdb.set_trace()
             price = np.reshape(prices[:, 0], prices.shape[0])
 
             self.prices = prices.copy()

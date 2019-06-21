@@ -1,7 +1,7 @@
 import os
 
 from app.lib import OUTPUT_FLD, ROOT_DIR
-from app.sampler import PairSampler
+from app.sampler import PairSampler, SinSampler
 from app.visualizer import Visualizer
 from app.emulator import Market
 from app.simulators import Simulator
@@ -88,12 +88,16 @@ def main():
     n_episode_training = 10  # number of training episodes
     n_episode_testing = 20  # number of testing episodes
     open_cost = 3.3  # cost of opening a bid
-    #db_type = 'SinSamplerDB'; db = 'concat_half_base_'; Sampler = SinSampler
-
+    univariate = True
     # which data to use when training
-    db_type = 'PairSamplerDB'
-    db = 'randjump_100,1(10, 30)[]_'
-    Sampler = PairSampler
+    if univariate:
+        db_type = 'SinSamplerDB'
+        db = 'concat_half_base_'
+        Sampler = SinSampler
+    else:
+        db_type = 'PairSamplerDB'
+        db = 'randjump_100,1(10, 30)[]_'
+        Sampler = PairSampler
     # directory for the data to load from
     fld = os.path.join(ROOT_DIR, 'data', db_type, db+'A')
     # load data from directory specified
@@ -142,19 +146,23 @@ def main():
 
     #agent.model = load_model(os.path.join(fld_save,'model'), learning_rate)
 
-    print('Testing trained model')
-    simulator.test(
-        n_episode_testing,
-        save_per_episode=1,
-        subfld='in-sample testing',
-    )
-
-    """
-    fld = os.path.join('data',db_type,db+'B')
-    sampler = SinSampler('load',fld=fld)
-    simulator.env.sampler = sampler
-    simulator.test(n_episode_testing, save_per_episode=1, subfld='out-of-sample testing')
-    """
+    if univariate:
+        print('Testing trained model for univariate (sin-like) data')
+        fld = os.path.join(ROOT_DIR, 'data', db_type, db+'B')
+        sampler = SinSampler('load', fld=fld)
+        simulator.env.sampler = sampler
+        simulator.test(
+            n_episode_testing,
+            save_per_episode=1,
+            subfld='out-of-sample testing',
+        )
+    else:
+        print('Testing trained model for bivariate (rand-jump) data')
+        simulator.test(
+            n_episode_testing,
+            save_per_episode=1,
+            subfld='in-sample testing',
+        )
 
 
 if __name__ == '__main__':

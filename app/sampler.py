@@ -55,6 +55,7 @@ class Sampler(object):
 
     def __sample_db(self):
         prices, title = self.db[self.i_db]
+        import pdb; pdb.set_trace()
         self.i_db += 1
         if self.i_db == self.n_db:
             self.i_db = 0
@@ -167,11 +168,18 @@ class SinSampler(Sampler):
         self.amplitude_range = amplitude_range
         self.can_half_period = False
 
-        self.attrs = ['title','window_episode', 'noise_amplitude_ratio', 'period_range', 'amplitude_range', 'can_half_period']
+        self.attrs = [
+            'title',
+            'window_episode',
+            'noise_amplitude_ratio',
+            'period_range',
+            'amplitude_range',
+            'can_half_period',
+        ]
 
         param_str = str((
             self.noise_amplitude_ratio, self.period_range, self.amplitude_range
-            ))
+        ))
         if game == 'single':
             self.sample = self.__sample_single_sin
             self.title = 'SingleSin'+param_str
