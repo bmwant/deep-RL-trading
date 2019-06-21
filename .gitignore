@@ -127,3 +127,4 @@ dmypy.json
 results/
 # exclude subdirectories
 data/*/
+.DS_Store

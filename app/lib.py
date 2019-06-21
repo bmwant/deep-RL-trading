@@ -1,7 +1,4 @@
-import random, os, datetime, pickle, json, keras, sys
-import pandas as pd
-#import matplotlib.pyplot as plt
-import numpy as np
+import os
 
 OUTPUT_FLD = os.path.join('..', 'results')
 

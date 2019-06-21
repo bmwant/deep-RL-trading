@@ -1,9 +1,17 @@
-from lib import *
-from sampler import *
-from agents import *
-from emulator import *
-from simulators import *
-from visualizer import *
+import os
+
+from app.lib import OUTPUT_FLD
+from app.sampler import PairSampler
+from app.visualizer import Visualizer
+from app.emulator import Market
+from app.simulators import Simulator
+from app.agents import (
+    Agent,
+    QModelConv,
+    QModelMLP,
+    QModelGRU,
+    QModelConvGRU,
+)
 
 
 def get_model(model_type, env, learning_rate, fld_load):
@@ -30,8 +38,14 @@ def get_model(model_type, env, learning_rate, fld_load):
         dilation = None
         dense_units = [48,24]
         model = QModelConv(env.state_shape, env.n_action)
-        model.build_model(filter_num, filter_size, dense_units, learning_rate,
-            dilation=dilation, use_pool=use_pool)
+        model.build_model(
+            filter_num,
+            filter_size,
+            dense_units,
+            learning_rate,
+            dilation=dilation,
+            use_pool=use_pool,
+        )
 
     elif model_type == 'RNN':
         m = 32

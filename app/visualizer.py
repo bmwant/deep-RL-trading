@@ -1,8 +1,7 @@
-import matplotlib.pyplot as plt
-import pandas as pd
+import keras
 import numpy as np
-
-from lib import *
+import pandas as pd
+import matplotlib.pyplot as plt
 
 
 def get_tick_labels(bins, ticks):
@@ -16,7 +15,7 @@ def get_tick_labels(bins, ticks):
     return ticklabels
 
 
-class Visualizer:
+class Visualizer(object):
     def __init__(self, action_labels):
         self.n_action = len(action_labels)
         self.action_labels = action_labels
@@ -27,7 +26,7 @@ class Visualizer:
         safe_cum_rewards, safe_actions,
         fig_path):
 
-        f, axs = plt.subplots(3,1, sharex=True, figsize=(14,14))
+        f, axs = plt.subplots(3, 1, sharex=True, figsize=(14,14))
         ax_price, ax_action, ax_Q = axs
 
         ls = ['-','--']
@@ -196,3 +195,7 @@ def test_visualizer():
     cbar = f.colorbar(cax, ax=ax)
 
     plt.show()
+
+
+if __name__ == '__main__':
+    test_visualizer()

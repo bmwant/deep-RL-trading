@@ -1,10 +1,15 @@
-from lib import *
+import os
+import random
+import pickle
+
+import keras
+import numpy as np
+
+from app.lib import makedirs
 
 
-class Agent:
-    def __init__(self, model,
-        batch_size=32, discount_factor=0.95):
-
+class Agent(object):
+    def __init__(self, model, batch_size=32, discount_factor=0.95):
         self.model = model
         self.batch_size = batch_size
         self.discount_factor = discount_factor
@@ -72,9 +77,8 @@ class QModelKeras:
     def __init__(self, state_shape, n_action):
         self.state_shape = state_shape
         self.n_action = n_action
-        self.attr2save = ['state_shape','n_action','model_name']
+        self.attr2save = ['state_shape', 'n_action', 'model_name']
         self.init()
-
 
     def save(self, fld):
         makedirs(fld)
@@ -167,6 +171,7 @@ class QModelRNN(QModelKeras):
 class QModelLSTM(QModelRNN):
     def init(self):
         self.qmodel = 'LSTM'
+
     def build_model(self, n_hidden, dense_units, learning_rate, activation='relu'):
         Layer = keras.layers.LSTM
         self._build_model(Layer, n_hidden, dense_units, learning_rate, activation)
@@ -261,6 +266,7 @@ class QModelConvLSTM(QModelConvRNN):
 class QModelConvGRU(QModelConvRNN):
     def init(self):
         self.qmodel = 'ConvGRU'
+
     def build_model(self, conv_n_hidden, RNN_n_hidden, dense_units, learning_rate,
         conv_kernel_size=3, use_pool=False, activation='relu'):
         Layer = keras.layers.GRU
@@ -276,7 +282,7 @@ def load_model(fld, learning_rate):
         'MLP':QModelMLP,
         'LSTM':QModelLSTM,
         'GRU':QModelGRU,
-        }
+    }
     qmodel = qmodels[s](None, None)
     qmodel.load(fld, learning_rate)
     return qmodel
