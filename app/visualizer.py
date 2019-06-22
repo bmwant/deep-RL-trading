@@ -15,15 +15,24 @@ def get_tick_labels(bins, ticks):
     return ticklabels
 
 
-def show_state(prices, state):
+def show_state(prices, state, offset: int = 0):
+    plt.rcParams['figure.figsize'] = (10, 6)
     prices_ticks = np.arange(0, len(prices))
-    plt.subplot(211)
+    ax_top = plt.subplot(211)
+    ax_top.set_title('Current dataset: {}'.format(len(prices)))
     plt.plot(prices_ticks, prices)
+    # Build vertical lines to show current state window
+    plt.axvline(x=offset, color='m', linestyle=':')
+    plt.axvline(x=len(state)+offset, color='m', linestyle=':')
+    # c - cyan
+    # m - magenta
+    state_ticks = np.arange(offset, len(state)+offset)
+    ax_bottom = plt.subplot(212)
+    ax_bottom.set_title('Current state windows: {}'.format(len(state)))
+    plt.plot(state_ticks, state, color='m')
 
-    state_ticks = np.arange(0, len(state))
-    plt.subplot(212)
-    plt.plot(state_ticks, state)
-
+    # This should be called after all axes have been added
+    plt.tight_layout()  # minimize overlaps
     plt.show()
 
 
