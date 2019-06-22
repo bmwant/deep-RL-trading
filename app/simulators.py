@@ -100,6 +100,7 @@ class Simulator(object):
                 rand_price=False,  # reuse previous sampled prices
                 print_t=False,
             )
+            print('safe cum reward', safe_cum_rewards)
             safe_total_rewards.append(
                 safe_cum_rewards[-1]/self.env.max_profit*100.)
 
