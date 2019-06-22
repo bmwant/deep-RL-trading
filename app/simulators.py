@@ -2,6 +2,7 @@ import os
 import numpy as np
 
 from app.lib import makedirs
+from app.visualizer import show_step
 
 
 class Simulator(object):
@@ -62,6 +63,7 @@ class Simulator(object):
         exploration_decay=0.995,
         exploration_min=0.01,
         print_t=False,
+        verbose=True,
     ):
         fld_model = os.path.join(self.fld_save, 'model')
         makedirs(fld_model)	 # don't overwrite if already exists
@@ -86,6 +88,7 @@ class Simulator(object):
             explorations.append(exploration)
             explored_cum_rewards, explored_actions, _ = self.play_one_episode(
                 exploration,
+                rand_price=True,  # use new data for each new episode
                 print_t=print_t,
             )
             explored_total_rewards.append(100.*explored_cum_rewards[-1]/self.env.max_profit)
@@ -117,7 +120,23 @@ class Simulator(object):
 
             with open(path_record, 'a') as f:
                 f.write(','.join(ss)+'\n')
-                print('\t'.join(ss))
+
+            if verbose:
+                header = [
+                    '#', 'Data used', 'Exploration',
+                    'Reward', 'Safe reward',
+                    'MA reward', 'MA safe reward',
+                ]
+                data = [[
+                    n,  # current episode
+                    self.env.title,  # data label used for episode
+                    '%.1f' % (exploration * 100.),
+                    '%.2f' % (explored_total_rewards[-1]),
+                    '%.2f' % (safe_total_rewards[-1]),
+                    '%.2f' % MA_total_rewards,
+                    '%.2f' % MA_safe_total_rewards,
+                ]]
+                show_step(data=data, header=header)
 
             if n % save_per_episode == 0:
                 print('saving results...')
@@ -140,7 +159,9 @@ class Simulator(object):
                 self.ma_window,
             )
 
-    def test(self, n_episode, *, save_per_episode=10, subfld='testing'):
+    def test(
+        self, n_episode, *, save_per_episode=10, subfld='testing', verbose=True,
+    ):
         """
         Test on `n_episode` episodes, disable exploration, use only trained
         model.
@@ -154,7 +175,7 @@ class Simulator(object):
             f.write('episode,game,pnl,rel,MA\n')
 
         for n in range(n_episode):
-            print('\ntesting...')
+            print('{}/{} testing...'.format(n, n_episode))
 
             safe_cum_rewards, safe_actions, _ = self.play_one_episode(
                 0,
@@ -175,7 +196,18 @@ class Simulator(object):
 
             with open(path_record, 'a') as f:
                 f.write(','.join(ss)+'\n')
-                print('\t'.join(ss))
+
+            if verbose:
+                header = [
+                    '# (testing)', 'Data used', 'Safe reward', 'MA safe reward',
+                ]
+                data = [[
+                    n,  # current episode
+                    self.env.title,  # data label used for episode
+                    '%.2f' % (safe_total_rewards[-1]),
+                    '%.2f' % MA_safe_total_rewards,
+                ]]
+                show_step(data=data, header=header)
 
             if n % save_per_episode == 0:
                 # print('saving results...')
