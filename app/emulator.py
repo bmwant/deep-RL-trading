@@ -75,9 +75,7 @@ class Market(object):
         self.empty = True
         if rand_price:
             prices, self.title = self.sampler.sample()
-            print(prices, prices.shape)
             price = np.reshape(prices[:, 0], prices.shape[0])
-            print(price, price.shape)
             self.prices = prices.copy()
             self.prices_norm = price / price[0] * 100
             self.t_max = len(self.prices_norm) - 1

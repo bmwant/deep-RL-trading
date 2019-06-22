@@ -1,5 +1,7 @@
 import os
 
+import click
+
 from app.lib import OUTPUT_FLD, ROOT_DIR
 from app.sampler import PairSampler, SinSampler
 from app.visualizer import Visualizer
@@ -15,7 +17,7 @@ from app.agents import (
 )
 
 
-def get_model(model_type, env, learning_rate, fld_load):
+def get_model(model_type, env, learning_rate, fld_load=None):
     print_t = False
     exploration_init = 1.
 
@@ -79,9 +81,6 @@ def get_model(model_type, env, learning_rate, fld_load):
 
 
 def main():
-    """
-    it is recommended to generate database using sampler.py before run main
-    """
     model_type = 'conv'  # default model type
     fld_load = None
     n_episode_training = 10  # number of training episodes
@@ -164,5 +163,70 @@ def main():
         )
 
 
+def custom_launch():
+    from app.sampler import PBSampler
+
+    model_type = 'conv'
+    n_episode_training = 400
+    n_episode_testing = 40
+    open_cost = 0.4
+
+    sampler = PBSampler()
+    window_state = 30  # set to month by default
+    learning_rate = 1e-4
+    discount_factor = 0.8
+    batch_size = 8
+
+    exploration_init = 1.  # always explore at the beginning
+    exploration_decay = 0.99
+    exploration_min = 0.01
+
+    env = Market(
+        sampler=sampler,
+        window_state=window_state,
+        open_cost=open_cost,
+    )
+    model, print_t = get_model(
+        model_type=model_type,
+        env=env,
+        learning_rate=learning_rate,
+    )
+    model.model.summary()
+
+    agent = Agent(
+        model=model,
+        discount_factor=discount_factor,
+        batch_size=batch_size,
+    )
+
+    fld_save = os.path.join(
+        OUTPUT_FLD, 'PB_2018_test'
+    )
+    simulator = Simulator(
+        agent=agent,
+        env=env,
+        visualizer=None,
+        fld_save=fld_save,
+    )
+
+    click.secho('Training agent...', fg='green')
+    simulator.train(
+        n_episode=n_episode_training,
+        save_per_episode=1,
+        exploration_init=exploration_init,
+        exploration_decay=exploration_decay,
+        exploration_min=exploration_min,
+        print_t=print_t,
+    )
+
+    click.secho('Testing agent...', fg='green')
+    simulator.test(
+        n_episode=n_episode_testing,
+        save_per_episode=1,
+        subfld='in-sample-testing',
+    )
+
+
 if __name__ == '__main__':
-    main()
+    # main()
+    custom_launch()

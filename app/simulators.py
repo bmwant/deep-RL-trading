@@ -20,7 +20,6 @@ class Simulator(object):
         rand_price=True,
         print_t=False,
     ):
-        print('Playing one episode with rand price', rand_price)
         state, valid_actions = self.env.reset(rand_price=rand_price)
         done = False
         env_t = 0
@@ -57,11 +56,12 @@ class Simulator(object):
     def train(
         self,
         n_episode,
+        *,
         save_per_episode=10,
+        exploration_init=1.,
         exploration_decay=0.995,
         exploration_min=0.01,
         print_t=False,
-        exploration_init=1.,
     ):
         fld_model = os.path.join(self.fld_save, 'model')
         makedirs(fld_model)	 # don't overwrite if already exists
@@ -130,18 +130,20 @@ class Simulator(object):
                     safe_cum_rewards, safe_actions,
                     os.path.join(fld_save, 'episode_%i.png'%(n)))
                 """
-        print('Plotting episodes', fld_save)
-        self.visualizer.plot_episodes(
-            explored_total_rewards,
-            safe_total_rewards,
-            explorations,
-            os.path.join(fld_save, 'total_rewards.png'),
-            self.ma_window,
-        )
+        if self.visualizer is not None:
+            print('Plotting episodes', fld_save)
+            self.visualizer.plot_episodes(
+                explored_total_rewards,
+                safe_total_rewards,
+                explorations,
+                os.path.join(fld_save, 'total_rewards.png'),
+                self.ma_window,
+            )
 
-    def test(self, n_episode, save_per_episode=10, subfld='testing'):
+    def test(self, n_episode, *, save_per_episode=10, subfld='testing'):
         """
-        Test on `n_episode` episodes
+        Test on `n_episode` episodes, disable exploration, use only trained
+        model.
         """
         fld_save = os.path.join(self.fld_save, subfld)
         makedirs(fld_save)
