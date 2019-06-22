@@ -15,6 +15,18 @@ def get_tick_labels(bins, ticks):
     return ticklabels
 
 
+def show_state(prices, state):
+    prices_ticks = np.arange(0, len(prices))
+    plt.subplot(211)
+    plt.plot(prices_ticks, prices)
+
+    state_ticks = np.arange(0, len(state))
+    plt.subplot(212)
+    plt.plot(state_ticks, state)
+
+    plt.show()
+
+
 class Visualizer(object):
     def __init__(self, action_labels):
         self.n_action = len(action_labels)

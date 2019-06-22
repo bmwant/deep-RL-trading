@@ -1,5 +1,7 @@
 import numpy as np
 
+from app.visualizer import show_state
+
 
 def find_ideal(p, just_once=False):
     """
@@ -73,8 +75,9 @@ class Market(object):
         self.empty = True
         if rand_price:
             prices, self.title = self.sampler.sample()
+            print(prices, prices.shape)
             price = np.reshape(prices[:, 0], prices.shape[0])
-
+            print(price, price.shape)
             self.prices = prices.copy()
             self.prices_norm = price / price[0] * 100
             self.t_max = len(self.prices_norm) - 1
@@ -131,8 +134,10 @@ class Market(object):
             raise ValueError('No such action: %s' % action)
 
         self.t += 1
+        state = self.get_state()
+        # show_state(self.prices, state)
         return (
-            self.get_state(),  # state
+            state,  # state
             reward,  # reward
             self.t == self.t_max,  # done?
             self.get_valid_actions()  # allowed actions

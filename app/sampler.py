@@ -2,11 +2,13 @@ import os
 import json
 import random
 import pickle
+import warnings
+from typing import Tuple
 
 import numpy as np
 import pandas as pd
 
-from app.lib import ROOT_DIR
+from app.lib import ROOT_DIR, DATASET_LENGTH
 
 
 def read_data(date, instrument, time_step):
@@ -29,6 +31,7 @@ class Sampler(object):
         self.i_db = 0
         self.n_db = None
         self.sample = None
+        self.n_var = 0
         self.title = ''
         self.attrs = []
 
@@ -61,6 +64,39 @@ class Sampler(object):
         if self.i_db == self.n_db:
             self.i_db = 0
         return prices, title
+
+
+class PBSampler(Sampler):
+    def __init__(self):
+        super().__init__()
+        self.offset = 0
+        self.n_var = 1  # price only
+        fld = os.path.join(ROOT_DIR, 'data', 'PBSamplerDB')
+        self.load_db(fld)
+
+    def load_db(self, fld):
+        db_path = os.path.join(fld, 'uah_to_usd_2018.csv')
+        df = pd.read_csv(db_path)
+        self.db = df[['sale']].to_numpy()
+        self.sample = self.__sample_db
+        # number of episodes equals to number of samples available
+        self.n_db = self.db.size - DATASET_LENGTH + 1
+
+    def __sample_db(self) -> Tuple[np.ndarray, str]:
+        s = self.db[self.offset:DATASET_LENGTH+self.offset]
+        self.title = 'uah_to_usd_2018_{}'.format(self.offset)
+        self.offset += 1
+        if self.offset == self.n_db:
+            warnings.warn(
+                'Last sample, will be reusing data starting next invocation')
+            self.offset = 0
+        return s, self.title
+
+    def __len__(self):
+        """
+        Number of samples available
+        """
+        return self.n_db
 
 
 class PairSampler(Sampler):
@@ -196,7 +232,7 @@ class SinSampler(Sampler):
             self.sample = self.__sample_concat_sin_w_base
             self.title = 'ConcatHalfSin+Base'+param_str
             self.base_period_range = (int(2*self.period_range[1]), 4*self.period_range[1])
-            self.base_amplitude_range = (20,80)
+            self.base_amplitude_range = (20, 80)
         elif game == 'load':
             self.load_db(fld)
         else:
@@ -231,7 +267,7 @@ class SinSampler(Sampler):
         p = 100. + amplitude * np.sin(np.array(range(length)) * 2 * 3.1416 / period)
         p += np.random.random(p.shape) * noise
 
-        return p, '100+%isin((2pi/%i)t)+%ie'%(amplitude, period, noise)
+        return p, '100+%isin((2pi/%i)t)+%ie' % (amplitude, period, noise)
 
     def __sample_concat_sin(self):
         prices = []
@@ -344,6 +380,20 @@ def test_pair_sampler():
     sampler.build_db(window_episode, fld)
 
 
+def test_pb_sampler():
+    from app.visualizer import show_state
+
+    sampler = PBSampler()
+    print('Number of samples available', len(sampler))
+    prices, title = sampler.sample()
+
+    price = np.reshape(prices[:, 0], prices.shape[0])
+    print(price, price.shape)
+    state = prices[:30]  # one month slice
+    show_state(prices, state)
+
+
 if __name__ == '__main__':
     # test_sin_sampler()
-    test_pair_sampler()
+    # test_pair_sampler()
+    test_pb_sampler()
