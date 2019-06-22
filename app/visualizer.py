@@ -1,7 +1,11 @@
+from typing import List
+
+import click
 import keras
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from terminaltables.other_tables import SingleTable, PorcelainTable
 
 
 def get_tick_labels(bins, ticks):
@@ -200,6 +204,18 @@ class VisualizerConv1D(VisualizerSequential):
         for w in ww:
             print(w.shape)
             print(w)
+
+
+def show_step(data: List, header=None):
+    table_data = []
+    if header is not None:
+        if len(data[0]) != len(header):
+            raise ValueError(
+                'Size of header should be equal to size of data row')
+        table_data.append(header)
+    table_data.extend(data)
+    tbl = SingleTable(table_data)
+    click.echo(tbl.table)
 
 
 def test_visualizer():
