@@ -39,6 +39,7 @@ class Agent(object):
             q_valid = self.get_q_valid(state, valid_actions)
             if np.nanmin(q_valid) != np.nanmax(q_valid):
                 return np.nanargmax(q_valid)
+        # Explorer some new random action
         return random.sample(valid_actions, 1)[0]
 
     def save(self, fld):

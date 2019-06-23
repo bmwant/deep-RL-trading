@@ -1,5 +1,4 @@
-
-# **Playing trading games with deep reinforcement learning**
+## Playing trading games with deep RL
 
 This repo is the code for this [paper](https://arxiv.org/abs/1803.03916).
 Deep reinforcement learning is used to find optimal strategies in these two scenarios:
@@ -16,6 +15,8 @@ Several neural networks are compared:
 ```bash
 $ pyenv local 3.6.7
 $ pyenv activate drl-trader
+$ pip install -r requirements.txt
+$ pip install -e .
 ```
 
 ### Play with it
@@ -32,4 +33,6 @@ $ python app/main.py
 $ python app/sampler.py
 ```
 
-You can play with model parameters (specified in main.py), if you get good results or any trouble, please contact me at gxiang1228@gmail.com
+### Authors
+
+* gxiang1228@gmail.com

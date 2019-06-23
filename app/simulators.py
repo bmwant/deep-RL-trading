@@ -2,11 +2,15 @@ import os
 import numpy as np
 
 from app.lib import makedirs
+from app.lib import DEFAULT_MA_WINDOW
 from app.visualizer import show_step
 
 
 class Simulator(object):
-    def __init__(self, agent, env, visualizer, fld_save, ma_window: int = 100):
+    def __init__(
+        self, agent, env, visualizer, fld_save,
+        ma_window: int = DEFAULT_MA_WINDOW,
+    ):
         self.agent = agent
         self.env = env
         # range for moving average window

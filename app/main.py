@@ -174,6 +174,7 @@ def custom_launch():
     exploration_init = 1.  # always explore at the beginning
     exploration_decay = 0.99
     exploration_min = 0.01
+    ma_window = 60  # just to measure overall performance
 
     env = Market(
         sampler=sampler,
@@ -212,6 +213,7 @@ def custom_launch():
         env=env,
         visualizer=visualizer,
         fld_save=fld_save,
+        ma_window=ma_window,
     )
 
     click.secho('Training agent...', fg='green')

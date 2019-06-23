@@ -7,6 +7,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from terminaltables.other_tables import SingleTable
 
+from app.lib import DEFAULT_MA_WINDOW
+
 
 def get_tick_labels(bins, ticks):
     ticklabels = []
@@ -41,9 +43,10 @@ def show_state(prices, state, offset: int = 0):
 
 
 class Visualizer(object):
-    def __init__(self, action_labels):
+    def __init__(self, action_labels, ma_window: int = DEFAULT_MA_WINDOW):
         self.n_action = len(action_labels)
         self.action_labels = action_labels
+        self.ma_window = ma_window
 
     def plot_a_episode(
         self,
@@ -55,7 +58,7 @@ class Visualizer(object):
         safe_actions,
         fig_path,
     ):
-        f, axs = plt.subplots(3, 1, sharex=True, figsize=(14,14))
+        f, axs = plt.subplots(3, 1, sharex=True, figsize=(14, 14))
         ax_price, ax_action, ax_Q = axs
 
         ls = ['-', '--']
@@ -66,7 +69,8 @@ class Visualizer(object):
         ax_price.plot(explored_cum_rewards, 'b', label='explored P&L')
         ax_price.plot(safe_cum_rewards, 'r', label='safe P&L')
         ax_price.legend(loc='best', frameon=False)
-        ax_price.set_title(env.title+', ideal: %.1f, safe: %.1f, explored: %1.f'%(
+        ax_price.set_title(
+            env.title+', ideal: %.1f, safe: %.1f, explored: %1.f' % (
             env.max_profit, safe_cum_rewards[-1], explored_cum_rewards[-1]))
 
         ax_action.plot(explored_actions, 'b', label='explored')
@@ -99,7 +103,6 @@ class Visualizer(object):
         safe_total_rewards,
         explorations,
         fig_path,
-        MA_window=100,
     ):
         f = plt.figure(figsize=(14, 10))	 # width, height in inch (100 pixel)
         if explored_total_rewards is None:
@@ -113,17 +116,17 @@ class Visualizer(object):
 
         if explored_total_rewards is not None:
             ma = pd.Series(np.array(explored_total_rewards)) \
-                .rolling(window=MA_window, min_periods=1).median()
+                .rolling(window=self.ma_window, min_periods=1).median()
             std = pd.Series(np.array(explored_total_rewards)) \
-                .rolling(window=MA_window, min_periods=3).std()
+                .rolling(window=self.ma_window, min_periods=3).std()
             ax_reward.plot(tt, explored_total_rewards, 'bv', fillstyle='none')
             ax_reward.plot(tt, ma, 'b', label='explored ma', linewidth=2)
             ax_reward.plot(tt, std, 'b--', label='explored std', linewidth=2)
 
         ma = pd.Series(np.array(safe_total_rewards)) \
-            .rolling(window=MA_window, min_periods=1).median()
+            .rolling(window=self.ma_window, min_periods=1).median()
         std = pd.Series(np.array(safe_total_rewards)) \
-            .rolling(window=MA_window, min_periods=3).std()
+            .rolling(window=self.ma_window, min_periods=3).std()
         ax_reward.plot(tt, safe_total_rewards, 'ro', fillstyle='none')
         ax_reward.plot(tt, ma, 'r', label='safe ma', linewidth=2)
         ax_reward.plot(tt, std, 'r--', label='safe std', linewidth=2)
@@ -184,7 +187,7 @@ class VisualizerConv1D(VisualizerSequential):
         for i in range(self.n_channel):
             ax = plt.subplot2grid(self.figshape, (0,i))
             ax.plot(x[0,:,i], '.-')
-            ax.set_title('input, channel %i'%i)
+            ax.set_title('input, channel %i' % i)
 
         for i_layer in range(len(self.layers)):
             layer = self.layers[i_layer]
