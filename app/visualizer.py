@@ -114,17 +114,19 @@ class Visualizer(object):
         if explored_total_rewards is not None:
             ma = pd.Series(np.array(explored_total_rewards)) \
                 .rolling(window=MA_window, min_periods=1).median()
-            std = pd.rolling_std(np.array(explored_total_rewards), window=MA_window, min_periods=3)
-            ax_reward.plot(tt, explored_total_rewards,'bv', fillstyle='none')
+            std = pd.Series(np.array(explored_total_rewards)) \
+                .rolling(window=MA_window, min_periods=3).std()
+            ax_reward.plot(tt, explored_total_rewards, 'bv', fillstyle='none')
             ax_reward.plot(tt, ma, 'b', label='explored ma', linewidth=2)
             ax_reward.plot(tt, std, 'b--', label='explored std', linewidth=2)
 
         ma = pd.Series(np.array(safe_total_rewards)) \
             .rolling(window=MA_window, min_periods=1).median()
-        std = pd.rolling_std(np.array(safe_total_rewards), window=MA_window, min_periods=3)
-        ax_reward.plot(tt, safe_total_rewards,'ro', fillstyle='none')
-        ax_reward.plot(tt, ma,'r', label='safe ma', linewidth=2)
-        ax_reward.plot(tt, std,'r--', label='safe std', linewidth=2)
+        std = pd.Series(np.array(safe_total_rewards)) \
+            .rolling(window=MA_window, min_periods=3).std()
+        ax_reward.plot(tt, safe_total_rewards, 'ro', fillstyle='none')
+        ax_reward.plot(tt, ma, 'r', label='safe ma', linewidth=2)
+        ax_reward.plot(tt, std, 'r--', label='safe std', linewidth=2)
 
         ax_reward.axhline(y=0, color='k', linestyle=':')
         #ax_reward.axhline(y=60, color='k', linestyle=':')

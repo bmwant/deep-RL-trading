@@ -161,7 +161,7 @@ def custom_launch():
     from app.sampler import PBSampler
 
     model_type = 'conv'
-    n_episode_training = 10
+    n_episode_training = 5
     n_episode_testing = 1
     open_cost = 0.4
 
