@@ -27,6 +27,7 @@ class Agent(object):
             self.model.fit(state, action, q)
 
     def get_q_valid(self, state, valid_actions):
+        # todo (misha): fix here if fail with NaN
         q = self.model.predict(state)
         q_valid = [np.nan] * len(q)
         for action in valid_actions:
@@ -47,9 +48,9 @@ class Agent(object):
             'batch_size':self.batch_size,
             'discount_factor':self.discount_factor,
             #'memory':self.memory
-            }
+        }
 
-        pickle.dump(attr, open(os.path.join(fld, 'agent_attr.pickle'),'wb'))
+        pickle.dump(attr, open(os.path.join(fld, 'agent_attr.pickle'), 'wb'))
         self.model.save(fld)
 
     def load(self, fld):
@@ -104,7 +105,7 @@ class QModelKeras:
     def predict(self, state):
         q = self.model.predict(
             add_dim(state, self.state_shape)
-            )[0]
+        )[0]
 
         if np.isnan(max(q)):
             print('state'+str(state))
@@ -120,7 +121,8 @@ class QModelKeras:
         self.model.fit(
             add_dim(state, self.state_shape),
             add_dim(q, (self.n_action,)),
-            epochs=1, verbose=0)
+            epochs=1, verbose=0,
+        )
 
 
 class QModelMLP(QModelKeras):
@@ -283,7 +285,7 @@ class QModelConvGRU(QModelConvRNN):
 
 
 def load_model(fld, learning_rate):
-    s = open(os.path.join(fld,'QModel.txt'), 'r').read().strip()
+    s = open(os.path.join(fld, 'QModel.txt'), 'r').read().strip()
     qmodels = {
         'Conv': QModelConv,
         'DenseOnly': QModelMLP,

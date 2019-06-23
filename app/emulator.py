@@ -102,20 +102,25 @@ class Market(object):
 
     def get_valid_actions(self):
         if self.empty:
-            return [0, 1]  # wait, open
+            return [0, 1]  # wait, open(buy)
         else:
-            return [0, 2]  # close, keep
+            return [0, 2]  # close, keep(sell)
 
     def get_noncash_reward(self, t=None, empty=None):
         if t is None:
             t = self.t
         if empty is None:
             empty = self.empty
-        reward = self.direction * (self.prices_norm[t+1] - self.prices_norm[t])
+        # reward = self.direction * (self.prices_norm[t+1] - self.prices_norm[t])
+        # when selling our profit is a diff
+        # we have to use normalized prices to be able properly leverage
+        # replay buffer
+        reward = self.prices_norm[t+1] - self.prices_norm[t]
         if empty:
+            # when buying price is higher, so we loose some money
             reward -= self.open_cost
-        if reward < 0:
-            reward *= (1. + self.risk_averse)
+        # if reward < 0:
+        #     reward *= (1. + self.risk_averse)
         return reward
 
     def step(self, action):
@@ -125,9 +130,11 @@ class Market(object):
             self.empty = True
         elif action == 1:  # open
             reward = self.get_noncash_reward()
+            # reward = self.get_reward(action)
             self.empty = False
         elif action == 2:  # keep
             reward = self.get_noncash_reward()
+            # reward = self.get_reward(action)
         else:
             raise ValueError('No such action: %s' % action)
 
@@ -139,4 +146,50 @@ class Market(object):
             reward,  # reward
             self.t == self.t_max,  # done?
             self.get_valid_actions()  # allowed actions
+        )
+
+    def get_reward(self, action, t=None):
+        if t is None:
+            t = self.t
+        reward = self.prices[t+1] - self.prices[t]
+        # print('{} <-{}-> {}'.format(self.prices[self.t-1], self.prices[self.t], self.prices[self.t+1]))
+        if action == 0:
+            reward = 0
+        elif action == 1:  # buy usd
+            reward -= self.open_cost
+        elif action == 2:  # sell usd
+            pass
+
+        return reward
+
+    def step_verbose(self, action):
+        print('\nTimestep: {}'.format(self.t))
+        # print('Price is: {}'.format(self.prices[self.t]))
+        if action == 0:  # do nothing
+            reward = 0
+            self.empty = True  # empty transaction
+            print('Agent decided to idle')
+        elif action == 1:  # buy usd
+            reward = self.get_reward(action)
+            self.empty = False
+            print('Agent decided to buy')
+        elif action == 2:  # sell money, profit is a diff
+            reward = self.get_reward(action)
+            print('Agent decided to sell')
+        else:
+            raise ValueError('No such action: %s' % action)
+
+        self.t += 1
+        state = self.get_state()
+        done = self.t == self.t_max
+        actions = self.get_valid_actions()
+        print('Done?', done)
+        print('Reward is', reward)
+        print('Available actions', actions)
+        # show_state(self.prices, state)
+        return (
+            state,
+            reward,
+            done,
+            actions,
         )

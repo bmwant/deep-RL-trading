@@ -19,7 +19,7 @@ class Simulator(object):
         exploration,
         training=True,
         rand_price=True,
-        print_t=False,
+        flg=False,
     ):
         state, valid_actions = self.env.reset(rand_price=rand_price)
         done = False
@@ -35,11 +35,11 @@ class Simulator(object):
         prev_cum_rewards = 0.
 
         while not done:
-            if print_t:
-                print(self.env.t)
-
             action = self.agent.act(state, exploration, valid_actions)
-            next_state, reward, done, valid_actions = self.env.step(action)
+            if not flg:
+                next_state, reward, done, valid_actions = self.env.step(action)
+            else:
+                next_state, reward, done, valid_actions = self.env.step_verbose(action)
 
             cum_rewards.append(prev_cum_rewards+reward)
             prev_cum_rewards = cum_rewards[-1]
@@ -62,7 +62,6 @@ class Simulator(object):
         exploration_init=1.,
         exploration_decay=0.995,
         exploration_min=0.01,
-        print_t=False,
         verbose=True,
     ):
         fld_model = os.path.join(self.fld_save, 'model')
@@ -89,7 +88,6 @@ class Simulator(object):
             explored_cum_rewards, explored_actions, _ = self.play_one_episode(
                 exploration,
                 rand_price=True,  # use new data for each new episode
-                print_t=print_t,
             )
             explored_total_rewards.append(100.*explored_cum_rewards[-1]/self.env.max_profit)
 
@@ -98,9 +96,7 @@ class Simulator(object):
                 exploration=0,  # exploit existing model
                 training=False,  # do not append to replay buffer
                 rand_price=False,  # reuse previous sampled prices
-                print_t=False,
             )
-            print('safe cum reward', safe_cum_rewards)
             safe_total_rewards.append(
                 safe_cum_rewards[-1]/self.env.max_profit*100.)
 
@@ -124,9 +120,16 @@ class Simulator(object):
 
             if verbose:
                 header = [
-                    '#', 'Data used', 'Exploration',
-                    'Reward', 'Safe reward',
-                    'MA reward', 'MA safe reward',
+                    '#',
+                    'Data used',
+                    'Exploration, %',
+                    'Reward, %',
+                    '[S] reward, %',
+                    'ABS reward',
+                    'ABS [S] reward',
+                    'MA reward, %',
+                    'MA [S] reward, %',
+                    'Max profit',
                 ]
                 data = [[
                     n,  # current episode
@@ -134,8 +137,11 @@ class Simulator(object):
                     '%.1f' % (exploration * 100.),
                     '%.2f' % (explored_total_rewards[-1]),
                     '%.2f' % (safe_total_rewards[-1]),
+                    '%.2f' % (explored_cum_rewards[-1]),  # abs explored reward
+                    '%.2f' % (safe_cum_rewards[-1]),  # abs safe reward
                     '%.2f' % MA_total_rewards,
                     '%.2f' % MA_safe_total_rewards,
+                    '%.2f' % self.env.max_profit,
                 ]]
                 show_step(data=data, header=header)
 
@@ -182,6 +188,7 @@ class Simulator(object):
                 0,
                 training=False,
                 rand_price=True,
+                flg=False,
             )
             rel_reward = 100. * safe_cum_rewards[-1] / self.env.max_profit
             safe_total_rewards.append(rel_reward)
@@ -200,13 +207,16 @@ class Simulator(object):
 
             if verbose:
                 header = [
-                    '# (testing)', 'Data used', 'Safe reward', 'MA safe reward',
+                    '# (testing)', 'Data used',
+                    'Safe reward, %', 'MA safe reward, %',
+                    'Max profit'
                 ]
                 data = [[
                     n,  # current episode
                     self.env.title,  # data label used for episode
                     '%.2f' % (safe_total_rewards[-1]),
                     '%.2f' % MA_safe_total_rewards,
+                    '%.2f' % self.env.max_profit,
                 ]]
                 show_step(data=data, header=header)
 

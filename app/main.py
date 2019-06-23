@@ -18,9 +18,6 @@ from app.agents import (
 
 
 def get_model(model_type, env, learning_rate, fld_load=None):
-    print_t = False
-    exploration_init = 1.
-
     if model_type == 'MLP':
         m = 16
         layers = 5
@@ -58,7 +55,6 @@ def get_model(model_type, env, learning_rate, fld_load=None):
         dense_units = [m, m]
         model = QModelGRU(env.state_shape, env.n_action)
         model.build_model(hidden_size, dense_units, learning_rate=learning_rate)
-        print_t = True
     elif model_type == 'ConvRNN':
         m = 8
         conv_n_hidden = [m, m]
@@ -71,13 +67,12 @@ def get_model(model_type, env, learning_rate, fld_load=None):
             dense_units,
             learning_rate=learning_rate,
         )
-        print_t = True
     elif model_type == 'pretrained':
-        agent.model = load_model(fld_load, learning_rate)
+        model = load_model(fld_load, learning_rate)
     else:
         raise ValueError('Incorrect model type was selected')
 
-    return model, print_t
+    return model
 
 
 def main():
@@ -113,7 +108,7 @@ def main():
     # create environment (market) from the data loaded
     env = Market(sampler, window_state, open_cost)
     # create a model based on type selected
-    model, print_t = get_model(model_type, env, learning_rate, fld_load)
+    model = get_model(model_type, env, learning_rate, fld_load)
     model.model.summary()
 
     # create an RL agent
@@ -139,7 +134,6 @@ def main():
         exploration_init=exploration_init,
         exploration_decay=exploration_decay,
         exploration_min=exploration_min,
-        print_t=print_t,
     )
 
     #agent.model = load_model(os.path.join(fld_save,'model'), learning_rate)
@@ -168,7 +162,7 @@ def custom_launch():
 
     model_type = 'conv'
     n_episode_training = 10
-    n_episode_testing = 5
+    n_episode_testing = 1
     open_cost = 0.4
 
     sampler = PBSampler()
@@ -186,11 +180,23 @@ def custom_launch():
         window_state=window_state,
         open_cost=open_cost,
     )
-    model, print_t = get_model(
+    model = get_model(
         model_type=model_type,
         env=env,
         learning_rate=learning_rate,
     )
+
+    fld_save = os.path.join(
+        OUTPUT_FLD, 'PB_2018_180d_30s_test2'
+    )
+
+    # fld_load_model = os.path.join(fld_save, 'model')
+    # model = get_model(
+    #     model_type='pretrained',
+    #     env=env,
+    #     learning_rate=learning_rate,
+    #     fld_load=fld_load_model,
+    # )
     model.model.summary()
 
     agent = Agent(
@@ -199,13 +205,12 @@ def custom_launch():
         batch_size=batch_size,
     )
 
-    fld_save = os.path.join(
-        OUTPUT_FLD, 'PB_2018_test'
-    )
+    visualizer = Visualizer(env.action_labels)
+
     simulator = Simulator(
         agent=agent,
         env=env,
-        visualizer=None,
+        visualizer=visualizer,
         fld_save=fld_save,
     )
 
@@ -216,7 +221,6 @@ def custom_launch():
         exploration_init=exploration_init,
         exploration_decay=exploration_decay,
         exploration_min=exploration_min,
-        print_t=print_t,
     )
 
     click.secho('Testing agent...', fg='green')

@@ -5,7 +5,7 @@ import keras
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from terminaltables.other_tables import SingleTable, PorcelainTable
+from terminaltables.other_tables import SingleTable
 
 
 def get_tick_labels(bins, ticks):
@@ -105,20 +105,22 @@ class Visualizer(object):
         if explored_total_rewards is None:
             f, ax_reward = plt.subplots()
         else:
-            figshape = (3,1)
+            figshape = (3, 1)
             ax_reward = plt.subplot2grid(figshape, (0, 0), rowspan=2)
             ax_exploration = plt.subplot2grid(figshape, (2, 0), sharex=ax_reward)
 
         tt = range(len(safe_total_rewards))
 
         if explored_total_rewards is not None:
-            ma = pd.rolling_median(np.array(explored_total_rewards), window=MA_window, min_periods=1)
+            ma = pd.Series(np.array(explored_total_rewards)) \
+                .rolling(window=MA_window, min_periods=1).median()
             std = pd.rolling_std(np.array(explored_total_rewards), window=MA_window, min_periods=3)
             ax_reward.plot(tt, explored_total_rewards,'bv', fillstyle='none')
             ax_reward.plot(tt, ma, 'b', label='explored ma', linewidth=2)
             ax_reward.plot(tt, std, 'b--', label='explored std', linewidth=2)
 
-        ma = pd.rolling_median(np.array(safe_total_rewards), window=MA_window, min_periods=1)
+        ma = pd.Series(np.array(safe_total_rewards)) \
+            .rolling(window=MA_window, min_periods=1).median()
         std = pd.rolling_std(np.array(safe_total_rewards), window=MA_window, min_periods=3)
         ax_reward.plot(tt, safe_total_rewards,'ro', fillstyle='none')
         ax_reward.plot(tt, ma,'r', label='safe ma', linewidth=2)
@@ -141,7 +143,7 @@ class Visualizer(object):
         plt.close()
 
 
-class VisualizerSequential:
+class VisualizerSequential(object):
 
     def config(self):
         pass
@@ -196,7 +198,7 @@ class VisualizerConv1D(VisualizerSequential):
                 ax.plot(z[0,:], '.-')
                 ax.set_title(layer)
 
-        ax.set_ylim(-100,100)
+        ax.set_ylim(-100, 100)
 
     def print_w(self):
         layer = self.layers[0]
