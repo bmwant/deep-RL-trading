@@ -23,7 +23,7 @@ class Simulator(object):
         exploration,
         training=True,
         rand_price=True,
-        flg=False,
+        verbose=False,
     ):
         state, valid_actions = self.env.reset(rand_price=rand_price)
         done = False
@@ -40,10 +40,8 @@ class Simulator(object):
 
         while not done:
             action = self.agent.act(state, exploration, valid_actions)
-            if not flg:
-                next_state, reward, done, valid_actions = self.env.step(action)
-            else:
-                next_state, reward, done, valid_actions = self.env.step_verbose(action)
+            next_state, reward, done, valid_actions = self.env.stepv1(action, verbose=verbose)
+            # next_state, reward, done, valid_actions = self.env.step_verbose(action)
 
             cum_rewards.append(prev_cum_rewards+reward)
             prev_cum_rewards = cum_rewards[-1]
@@ -129,8 +127,8 @@ class Simulator(object):
                     'Exploration, %',
                     'Reward, %',
                     '[S] reward, %',
-                    'ABS reward',
-                    'ABS [S] reward',
+                    'REL reward',
+                    'REL [S] reward',
                     'MA reward, %',
                     'MA [S] reward, %',
                     'Max profit',
@@ -141,8 +139,8 @@ class Simulator(object):
                     '%.1f' % (exploration * 100.),
                     '%.2f' % (explored_total_rewards[-1]),
                     '%.2f' % (safe_total_rewards[-1]),
-                    '%.2f' % (explored_cum_rewards[-1]),  # abs explored reward
-                    '%.2f' % (safe_cum_rewards[-1]),  # abs safe reward
+                    '%.2f' % (explored_cum_rewards[-1]),  # rel explored reward
+                    '%.2f' % (safe_cum_rewards[-1]),  # rel safe reward
                     '%.2f' % MA_total_rewards,
                     '%.2f' % MA_safe_total_rewards,
                     '%.2f' % self.env.max_profit,
@@ -160,6 +158,7 @@ class Simulator(object):
                     safe_cum_rewards, safe_actions,
                     os.path.join(fld_save, 'episode_%i.png'%(n)))
                 """
+
         if self.visualizer is not None:
             print('Plotting episodes', fld_save)
             self.visualizer.plot_episodes(
@@ -167,7 +166,6 @@ class Simulator(object):
                 safe_total_rewards,
                 explorations,
                 os.path.join(fld_save, 'total_rewards.png'),
-                self.ma_window,
             )
 
     def test(
@@ -192,7 +190,7 @@ class Simulator(object):
                 0,
                 training=False,
                 rand_price=True,
-                flg=False,
+                verbose=verbose,
             )
             rel_reward = 100. * safe_cum_rewards[-1] / self.env.max_profit
             safe_total_rewards.append(rel_reward)
@@ -222,6 +220,7 @@ class Simulator(object):
                     '%.2f' % MA_safe_total_rewards,
                     '%.2f' % self.env.max_profit,
                 ]]
+                print()
                 show_step(data=data, header=header)
 
             if n % save_per_episode == 0:

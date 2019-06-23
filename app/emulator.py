@@ -1,3 +1,4 @@
+import click
 import numpy as np
 
 from app.visualizer import show_state
@@ -19,7 +20,24 @@ def find_ideal(p, just_once=False):
         return best
 
 
-class Market(object):
+class Environment(object):
+    def reset(self, *args, **kwargs):
+        pass
+
+    def get_state(self, *args, **kwargs):
+        pass
+
+    def get_valid_actions(self):
+        pass
+
+    def step(self, action):
+        pass
+
+    def get_reward(self, *args, **kwargs):
+        pass
+
+
+class Market(Environment):
     """
     state
         MA of prices, normalized using values at t
@@ -28,9 +46,9 @@ class Market(object):
 
     action
         three actions
-        0:	empty, don't open/close.
-        1:	open a position
-        2: 	keep a position
+        0:	sell
+        1:	buy
+        2: 	hold/idle
     """
     def __init__(
         self,
@@ -57,7 +75,11 @@ class Market(object):
         # e.g. (40, 1) for univariate and (40, 2) for bivariate
         self.state_shape = (window_state, self.sampler.n_var)
         # labels for actions
-        self.action_labels = ['empty', 'open', 'keep']
+        self.action_labels = [
+            'sell',
+            'buy',
+            'idle',
+        ]
         # initial time step
         # we need `window_state` days to look back, so starting here
         self.t0 = window_state - 1
@@ -70,11 +92,14 @@ class Market(object):
         self.title = ''
         self.prices = []  # ndarray for the data from sampler
         self.prices_norm = []  # ndarray for normalized price dataset
+        self._last_price = 0.
+        self._last_price_norm = 0.
 
     def reset(self, rand_price=True):
         self.empty = True
         if rand_price:
             prices, self.title = self.sampler.sample()
+            # get only first signal
             price = np.reshape(prices[:, 0], prices.shape[0])
             self.prices = prices.copy()
             self.prices_norm = price / price[0] * 100
@@ -101,10 +126,15 @@ class Market(object):
         return state
 
     def get_valid_actions(self):
+        """
+        0 - sell stock share/usd
+        1 - buy stock share/usd
+        2 - hold stock share/idle action
+        """
         if self.empty:
-            return [0, 1]  # wait, open(buy)
+            return [1, 2]  # buy, idle
         else:
-            return [0, 2]  # close, keep(sell)
+            return [0, 2]  # sell, idle
 
     def get_noncash_reward(self, t=None, empty=None):
         if t is None:
@@ -132,9 +162,10 @@ class Market(object):
             reward = self.get_noncash_reward()
             # reward = self.get_reward(action)
             self.empty = False
-        elif action == 2:  # keep
+        elif action == 2:  # keep prev state; idle; do nothing
             reward = self.get_noncash_reward()
             # reward = self.get_reward(action)
+            # empty value is the same as previously
         else:
             raise ValueError('No such action: %s' % action)
 
@@ -145,6 +176,39 @@ class Market(object):
             state,  # state
             reward,  # reward
             self.t == self.t_max,  # done?
+            self.get_valid_actions()  # allowed actions
+        )
+
+    def stepv1(self, action, verbose=False):
+        if action == 0:  # sell
+            reward = self.prices_norm[self.t] - self._last_price_norm
+            self.empty = True
+            if verbose:
+                click.secho('\n+', fg='green', nl=False)
+                print('%.2f->%.2f' % (self._last_price, self.prices[self.t]))
+                print('%.2f->%.2f' % (self._last_price_norm, self.prices_norm[self.t]))
+        elif action == 1:  # buy
+            reward = -self.open_cost
+            self._last_price = self.prices[self.t]
+            self._last_price_norm = self.prices_norm[self.t]
+            self.empty = False
+            if verbose:
+                click.secho('-', fg='red', nl=False)
+        elif action == 2:  # hold/do nothing
+            reward = 0.
+            if verbose:
+                click.secho('_', fg='blue', nl=False)
+        else:
+            raise ValueError('No such action: %s' % action)
+
+        self.t += 1
+        done = self.t == self.t_max
+        state = self.get_state()
+        # show_state(self.prices, state)
+        return (
+            state,  # state
+            reward,  # reward
+            done,
             self.get_valid_actions()  # allowed actions
         )
 

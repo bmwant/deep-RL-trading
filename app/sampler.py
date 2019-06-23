@@ -70,17 +70,17 @@ class PBSampler(Sampler):
     def __init__(self):
         super().__init__()
         self.offset = 0
-        self.n_var = 1  # price only
+        self.n_var = 2  # price only
         fld = os.path.join(ROOT_DIR, 'data', 'PBSamplerDB')
         self.load_db(fld)
 
     def load_db(self, fld):
         db_path = os.path.join(fld, 'uah_to_usd_2018.csv')
         df = pd.read_csv(db_path)
-        self.db = df[['sale']].to_numpy()
+        self.db = df[['buy', 'sale']].to_numpy()
         self.sample = self.__sample_db
         # number of episodes equals to number of samples available
-        self.n_db = self.db.size - DATASET_LENGTH + 1
+        self.n_db = self.db.shape[0] - DATASET_LENGTH + 1
 
     def __sample_db(self) -> Tuple[np.ndarray, str]:
         s = self.db[self.offset:DATASET_LENGTH+self.offset]

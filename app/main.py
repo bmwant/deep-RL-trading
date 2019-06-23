@@ -161,14 +161,14 @@ def custom_launch():
     from app.sampler import PBSampler
 
     model_type = 'conv'
-    n_episode_training = 5
+    n_episode_training = 300
     n_episode_testing = 1
-    open_cost = 0.4
+    open_cost = 0.1
 
     sampler = PBSampler()
     window_state = 30  # set to month by default
     learning_rate = 1e-4
-    discount_factor = 0.8
+    discount_factor = 0.95
     batch_size = 8
 
     exploration_init = 1.  # always explore at the beginning
@@ -188,7 +188,7 @@ def custom_launch():
     )
 
     fld_save = os.path.join(
-        OUTPUT_FLD, 'PB_2018_180d_30s_test2'
+        OUTPUT_FLD, 'PB_2018_180d_30s_test5'
     )
 
     # fld_load_model = os.path.join(fld_save, 'model')
@@ -208,6 +208,7 @@ def custom_launch():
 
     visualizer = Visualizer(env.action_labels)
 
+    # env.sampler.offset = 90
     simulator = Simulator(
         agent=agent,
         env=env,
@@ -226,10 +227,12 @@ def custom_launch():
     )
 
     click.secho('Testing agent...', fg='green')
+
     simulator.test(
         n_episode=n_episode_testing,
         save_per_episode=1,
         subfld='in-sample-testing',
+        verbose=True,
     )
 
 
