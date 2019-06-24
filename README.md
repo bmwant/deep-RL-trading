@@ -1,7 +1,7 @@
+## Playing trading games with deep RL
 
-# **Playing trading games with deep reinforcement learning**
-
-This repo is the code for this [paper](https://arxiv.org/abs/1803.03916). Deep reinforcement learing is used to find optimal strategies in these two scenarios:
+This repo is the code for this [paper](https://arxiv.org/abs/1803.03916).
+Deep reinforcement learning is used to find optimal strategies in these two scenarios:
 * Momentum trading: capture the underlying dynamics
 * Arbitrage trading: utilize the hidden relation among the inputs
 
@@ -10,13 +10,41 @@ Several neural networks are compared:
 * Convolutional Neural Network (CNN)
 * Multi-Layer Perception (MLP)
 
-### Play with it
-
-`Python 3.6.7` is used to run the code
+### Dependencies
 
 ```bash
+$ pyenv local 3.6.7
 $ pyenv activate drl-trader
-$ python main.py
+$ pip install -r requirements.txt
+$ pip install -e .
 ```
 
-You can play with model parameters (specified in main.py), if you get good results or any trouble, please contact me at gxiang1228@gmail.com
+Set matplotlib backend `~/.matplotlib/matplotlibrc`
+
+```text
+backend: qt5agg
+```
+
+### Play with it
+
+* Launch main script
+
+```bash
+$ python app/main.py
+```
+
+* Testing data generation with sampler
+
+```bash
+$ python app/sampler.py
+```
+
+* Leave agent training for a long period of time
+
+```bash
+$ caffeinate -sid python app/main.py
+```
+
+### Authors
+
+* gxiang1228@gmail.com
