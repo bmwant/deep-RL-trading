@@ -166,7 +166,7 @@ def custom_launch():
     open_cost = 0.1
 
     sampler = PBSampler()
-    window_state = 30  # set to month by default
+    window_state = 40  # set to month by default
     learning_rate = 1e-4
     discount_factor = 0.95
     batch_size = 8
@@ -181,7 +181,7 @@ def custom_launch():
         window_state=window_state,
         open_cost=open_cost,
     )
-    # n_episode_training = len(sampler)
+    # n_episode_training = 2*len(sampler)
     n_episode_training = 5
 
     model = get_model(
@@ -191,7 +191,7 @@ def custom_launch():
     )
 
     fld_save = os.path.join(
-        # OUTPUT_FLD, 'PB_2018_180d_30s_test8'
+        # OUTPUT_FLD, 'PB_2018_180d_40s_test1'
         OUTPUT_FLD, 'debug',
     )
 

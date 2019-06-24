@@ -127,7 +127,7 @@ class Simulator(object):
                 f.write(','.join(ss)+'\n')
 
             last_reward = safe_cum_rewards[-1]
-            profit = last_reward - self.env.hanging
+            profit = last_reward + self.env.hanging
             if verbose:
                 # print('Hanging', self.env.hanging)
                 header = [
@@ -235,19 +235,24 @@ class Simulator(object):
 
             if n % save_per_episode == 0:
                 # print('saving results...')
-                # it's not saving anything here atm
-                """
-                self.visualizer.plot_a_episode(
-                    self.env, self.agent.model, 
-                    [np.nan]*len(safe_cum_rewards), [np.nan]*len(safe_actions),
-                    safe_cum_rewards, safe_actions,
-                    os.path.join(fld_save, 'episode_%i.png'%(n)))
+                pass
 
+            if self.visualizer is not None:
+                self.visualizer.plot_a_episode(
+                    self.env,
+                    self.agent.model,
+                    [np.nan]*len(safe_cum_rewards),
+                    [np.nan]*len(safe_actions),
+                    safe_cum_rewards,
+                    safe_actions,
+                    os.path.join(fld_save, 'episode_%i.png' % n)
+                )
+                """
                 self.visualizer.plot_episodes(
                     None, safe_total_rewards, None, 
                     os.path.join(fld_save, 'total_rewards.png'),
                     MA_window)
-                    """
+                """
 
 
 if __name__ == '__main__':
