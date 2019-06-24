@@ -239,6 +239,76 @@ def custom_launch():
     )
 
 
+def play_launch():
+    from app.sampler import PlaySampler
+
+    model_type = 'conv'
+    n_episode_training = 100
+    n_episode_testing = 20
+
+    sampler = PlaySampler(db_name='db01.csv')
+    window_state = 10  # num of days
+    learning_rate = 1e-4
+    discount_factor = 0.95
+    batch_size = 8
+
+    exploration_init = 1.  # always explore at the beginning
+    exploration_decay = 0.99
+    exploration_min = 0.1
+    ma_window = 30
+
+    env = Market(
+        sampler=sampler,
+        window_state=window_state,
+        open_cost=0,
+    )
+
+    model = get_model(
+        model_type=model_type,
+        env=env,
+        learning_rate=learning_rate,
+    )
+
+    fld_save = os.path.join(
+        OUTPUT_FLD, 'PB_2018_100d_10s_test1'
+    )
+
+    model.model.summary()
+
+    agent = Agent(
+        model=model,
+        discount_factor=discount_factor,
+        batch_size=batch_size,
+    )
+
+    visualizer = Visualizer(env.action_labels)
+
+    simulator = Simulator(
+        agent=agent,
+        env=env,
+        visualizer=visualizer,
+        fld_save=fld_save,
+        ma_window=ma_window,
+    )
+
+    click.secho('Training agent...', fg='green')
+    simulator.train(
+        n_episode=n_episode_training,
+        save_per_episode=1,
+        exploration_init=exploration_init,
+        exploration_decay=exploration_decay,
+        exploration_min=exploration_min,
+    )
+
+    click.secho('Testing agent...', fg='green')
+    simulator.test(
+        n_episode=n_episode_testing,
+        save_per_episode=5,
+        subfld='out-sample-testing',
+        verbose=True,
+    )
+
+
 def debug_one_episode():
     from app.sampler import PBSampler
 
@@ -310,5 +380,6 @@ def debug_one_episode():
 
 if __name__ == '__main__':
     # main()
-    custom_launch()
+    # custom_launch()
     # debug_one_episode()
+    play_launch()

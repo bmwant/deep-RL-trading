@@ -99,6 +99,34 @@ class PBSampler(Sampler):
         return self.n_db
 
 
+class PlaySampler(Sampler):
+    EPISODE_LENGTH = 100
+
+    def __init__(self, db_name):
+        super().__init__()
+        self.db_name = db_name
+        db_path = os.path.join(ROOT_DIR, 'data', 'PlaySamplerDB', db_name)
+        self.load_db(db_path=db_path)
+        # number of samples
+        self.n_db = self.db.shape[0] - self.EPISODE_LENGTH + 1
+
+    def load_db(self, db_path):
+        db = np.genfromtxt(db_path, delimiter=',')
+        self.db = np.expand_dims(db, axis=1)
+        self.sample = self.__sample_db
+
+    def __sample_db(self) -> Tuple[np.ndarray, str]:
+        if self.i_db > self.n_db:
+            raise ValueError('Cannot yield more than %s samples' % self.n_db)
+
+        s = self.db[self.i_db:self.i_db+self.EPISODE_LENGTH]
+        self.title = '{}_{}'.format(self.db_name, self.i_db)
+
+        self.i_db += 1
+
+        return s, self.title
+
+
 class PairSampler(Sampler):
     def __init__(
         self,
@@ -307,8 +335,8 @@ def test_sin_sampler():
     window_episode = 180
     window_state = 40
     noise_amplitude_ratio = 0.5
-    period_range = (10,40)
-    amplitude_range = (5,80)
+    period_range = (10, 40)
+    amplitude_range = (5, 80)
     game = 'concat_half_base'
     instruments = ['fake']
 
@@ -393,7 +421,22 @@ def test_pb_sampler():
     show_state(prices, state)
 
 
+def test_play_sampler():
+    from app.converter import plot_data
+    from app.visualizer import show_state
+
+    sampler = PlaySampler('db00.csv')
+    prices, title = sampler.sample()
+
+    price = np.reshape(prices[:, 0], prices.shape[0])
+    print(price, price.shape)
+    state = prices[:10]  # ten data points
+    show_state(prices, state)
+
+
+
 if __name__ == '__main__':
     # test_sin_sampler()
     # test_pair_sampler()
-    test_pb_sampler()
+    # test_pb_sampler()
+    test_play_sampler()
