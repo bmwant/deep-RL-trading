@@ -243,10 +243,10 @@ def play_launch():
     from app.sampler import PlaySampler
 
     sampler = PlaySampler(db_name='db2018_train.csv')
-    n_episode_training = 600
+    n_episode_training = 2000
     n_episode_testing = sampler.test_samples
 
-    window_state = 10  # num of days
+    window_state = 30  # num of days
     learning_rate = 1e-4
     discount_factor = 0.95
     batch_size = 8
@@ -254,32 +254,32 @@ def play_launch():
     exploration_init = 1.  # always explore at the beginning
     exploration_decay = 0.99
     exploration_min = 0.1
-    ma_window = 30
+    ma_window = 60
 
     env = PlayMarket(
         sampler=sampler,
         window_state=window_state,
     )
 
-    # model_type = 'conv'
-    # model = get_model(
-    #     model_type=model_type,
-    #     env=env,
-    #     learning_rate=learning_rate,
-    # )
-
-    fld_save = os.path.join(
-        OUTPUT_FLD, 'Play_2018_300d_10s_test2'
-    )
-
-    model_type = 'pretrained'
-    fld_load_model = os.path.join(fld_save, 'model')
+    model_type = 'conv'
     model = get_model(
         model_type=model_type,
         env=env,
         learning_rate=learning_rate,
-        fld_load=fld_load_model,
     )
+
+    fld_save = os.path.join(
+        OUTPUT_FLD, 'Play_2018_300d_30s_test1'
+    )
+
+    # model_type = 'pretrained'
+    # fld_load_model = os.path.join(fld_save, 'model')
+    # model = get_model(
+    #     model_type=model_type,
+    #     env=env,
+    #     learning_rate=learning_rate,
+    #     fld_load=fld_load_model,
+    # )
 
     model.model.summary()
 

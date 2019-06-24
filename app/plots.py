@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def plot_state_window(data):
+def plot_state_prices_window(data):
     x_ticks = np.arange(0, len(data) + 1, step=1)
 
     fig = plt.figure(figsize=(12, 8))

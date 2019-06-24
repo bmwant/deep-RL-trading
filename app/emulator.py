@@ -309,9 +309,9 @@ class PlayMarket(Environment):
 
         # todo (misha): remove me
         self.max_profit = 1
-        assert self.max_slots == self.window_state, 'Fix state shape'
 
-        self.state_shape = (window_state, self.sampler.n_var+1)
+        # self.state_shape = (window_state, self.sampler.n_var+1)
+        self.state_shape = (window_state + self.max_slots, 1)
         # labels for actions
         self.action_labels = [
             'sell',
@@ -333,7 +333,7 @@ class PlayMarket(Environment):
         self.t = self.t0
         self.t_max = len(self.prices) - 1
 
-        # assert 100 data points steps in each episode
+        # assert we have required data points
         assert self.t_max - self.t + self.window_state == \
             self.sampler.EPISODE_LENGTH
         # todo (misha): maybe set state shape here?
@@ -352,7 +352,9 @@ class PlayMarket(Environment):
         for i, t in enumerate(self.transactions):
             slots[i] = t.price
 
-        return np.hstack((state, slots)).copy()
+        # return np.hstack((state, slots)).copy()
+        state = np.append(state, slots)
+        return np.expand_dims(state, axis=1)
 
     def get_valid_actions(self):
         """
@@ -399,17 +401,17 @@ class PlayMarket(Environment):
 
 def test_play_environment():
     from app.sampler import PlaySampler
-    from app.plots import plot_state_window
+    from app.plots import plot_state_prices_window
 
-    sampler = PlaySampler(db_name='db00.csv')
+    sampler = PlaySampler(db_name='db2018_train.csv')
     env = PlayMarket(
         sampler=sampler,
         window_state=10,
     )
 
     state, actions = env.reset(rand_price=True)
-    print(state)
-    plot_state_window(state)
+    price_window = state.transpose()[0]
+    plot_state_prices_window(price_window)
 
 
 if __name__ == '__main__':
