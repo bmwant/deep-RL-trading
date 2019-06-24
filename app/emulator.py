@@ -307,6 +307,16 @@ class PlayMarket(Environment):
         self.title: str = ''
         self.prices = []
 
+        # two extra flags
+        self.state_shape = (window_state+2, self.sampler.n_var)
+        # labels for actions
+        self.action_labels = [
+            'sell',
+            'buy',
+            'idle',
+        ]
+        self.n_action = len(self.action_labels)  # 3 available actions
+
         self.t = None
         self.t0 = window_state - 1
         self.t_max = None
@@ -323,6 +333,7 @@ class PlayMarket(Environment):
         # assert 100 data points steps in each episode
         assert self.t_max - self.t + self.window_state == \
             self.sampler.EPISODE_LENGTH
+        # todo (misha): maybe set state shape here?
         return self.get_state(), self.get_valid_actions()
 
     def get_state(self, *args, **kwargs):
@@ -349,7 +360,7 @@ class PlayMarket(Environment):
         else:
             return [0, 1, 2]  # sell, buy, idle
 
-    def step(self, action):
+    def step(self, action, verbose=True):
         if action == 0:  # sell
             slot = self.transactions.popleft()
             price = self.prices[self.t]
@@ -377,6 +388,10 @@ class PlayMarket(Environment):
 
     def get_reward(self, *args, **kwargs):
         pass
+
+    @property
+    def max_profit(self):
+        return 100.0
 
 
 def test_play_environment():

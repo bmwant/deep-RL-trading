@@ -40,7 +40,7 @@ class Simulator(object):
 
         while not done:
             action = self.agent.act(state, exploration, valid_actions)
-            next_state, reward, done, valid_actions = self.env.stepv1(action, verbose=verbose)
+            next_state, reward, done, valid_actions = self.env.step(action, verbose=verbose)
             # next_state, reward, done, valid_actions = self.env.step_verbose(action)
 
             cum_rewards.append(prev_cum_rewards+reward)
@@ -127,7 +127,7 @@ class Simulator(object):
                 f.write(','.join(ss)+'\n')
 
             last_reward = safe_cum_rewards[-1]
-            profit = last_reward + self.env.hanging
+            profit = last_reward
             if verbose:
                 # print('Hanging', self.env.hanging)
                 header = [

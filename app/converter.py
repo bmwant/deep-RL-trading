@@ -16,12 +16,9 @@ def main():
     rounded = scaled_rate.round()
 
     db_dir = os.path.join(DATA_DIR, 'PlaySamplerDB')
-    db_size = 119  # 100 steps + 20 steps for testings (windows = 10)
-    for i in range(3):
-        db_data = rounded[i*db_size:(i+1)*db_size]
-        db_name = 'db{:02d}.csv'.format(i)
-        db_path = os.path.join(db_dir, db_name)
-        np.savetxt(db_path, db_data, fmt='%d', delimiter=',')
+    db_name = 'db2018_train.csv'
+    db_path = os.path.join(db_dir, db_name)
+    np.savetxt(db_path, rounded, fmt='%d', delimiter=',')
 
 
 if __name__ == '__main__':

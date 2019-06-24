@@ -11,20 +11,6 @@ import pandas as pd
 from app.lib import ROOT_DIR, DATASET_LENGTH
 
 
-def read_data(date, instrument, time_step):
-    """
-    Seems like this one is unused
-    """
-    path = os.path.join(PRICE_FLD, date, instrument+'.csv')
-    if not os.path.exists(path):
-        print('no such file: '+path)
-        return None
-
-    df_raw = pd.read_csv(path, parse_dates=['time'], index_col='time')
-    df = df_raw.resample(time_step, how='last').fillna(method='ffill')
-    return df['spot'].values
-
-
 class Sampler(object):
     def __init__(self):
         self.db = None
@@ -100,15 +86,17 @@ class PBSampler(Sampler):
 
 
 class PlaySampler(Sampler):
-    EPISODE_LENGTH = 100
+    EPISODE_LENGTH = 300
 
-    def __init__(self, db_name):
+    def __init__(self, db_name, testing=False):
         super().__init__()
         self.db_name = db_name
+        self.n_var = 1
         db_path = os.path.join(ROOT_DIR, 'data', 'PlaySamplerDB', db_name)
         self.load_db(db_path=db_path)
         # number of samples
         self.n_db = self.db.shape[0] - self.EPISODE_LENGTH + 1
+        self.testing = testing
 
     def load_db(self, db_path):
         db = np.genfromtxt(db_path, delimiter=',')
@@ -116,13 +104,8 @@ class PlaySampler(Sampler):
         self.sample = self.__sample_db
 
     def __sample_db(self) -> Tuple[np.ndarray, str]:
-        if self.i_db > self.n_db:
-            raise ValueError('Cannot yield more than %s samples' % self.n_db)
-
-        s = self.db[self.i_db:self.i_db+self.EPISODE_LENGTH]
-        self.title = '{}_{}'.format(self.db_name, self.i_db)
-
-        self.i_db += 1
+        s = self.db[:self.EPISODE_LENGTH]
+        self.title = self.db_name
 
         return s, self.title
 
@@ -414,7 +397,6 @@ def test_pb_sampler():
     sampler = PBSampler()
     print('Number of samples available', len(sampler))
     prices, title = sampler.sample()
-
     price = np.reshape(prices[:, 0], prices.shape[0])
     print(price, price.shape)
     state = prices[:30]  # one month slice
@@ -422,17 +404,14 @@ def test_pb_sampler():
 
 
 def test_play_sampler():
-    from app.converter import plot_data
     from app.visualizer import show_state
 
-    sampler = PlaySampler('db00.csv')
+    sampler = PlaySampler('db2018_train.csv')
     prices, title = sampler.sample()
-
     price = np.reshape(prices[:, 0], prices.shape[0])
     print(price, price.shape)
     state = prices[:10]  # ten data points
     show_state(prices, state)
-
 
 
 if __name__ == '__main__':

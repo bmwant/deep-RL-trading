@@ -5,7 +5,7 @@ import click
 from app.lib import OUTPUT_FLD, ROOT_DIR
 from app.sampler import PairSampler, SinSampler
 from app.visualizer import Visualizer
-from app.emulator import Market
+from app.emulator import Market, PlayMarket
 from app.simulators import Simulator
 from app.agents import load_model
 from app.agents import (
@@ -243,10 +243,10 @@ def play_launch():
     from app.sampler import PlaySampler
 
     model_type = 'conv'
-    n_episode_training = 100
-    n_episode_testing = 20
+    n_episode_training = 400
+    n_episode_testing = 1  # anyway we are reusing same data
 
-    sampler = PlaySampler(db_name='db01.csv')
+    sampler = PlaySampler(db_name='db2018_train.csv')
     window_state = 10  # num of days
     learning_rate = 1e-4
     discount_factor = 0.95
@@ -257,10 +257,9 @@ def play_launch():
     exploration_min = 0.1
     ma_window = 30
 
-    env = Market(
+    env = PlayMarket(
         sampler=sampler,
         window_state=window_state,
-        open_cost=0,
     )
 
     model = get_model(
@@ -270,7 +269,7 @@ def play_launch():
     )
 
     fld_save = os.path.join(
-        OUTPUT_FLD, 'PB_2018_100d_10s_test1'
+        OUTPUT_FLD, 'Play_2018_300d_10s_test1'
     )
 
     model.model.summary()
@@ -281,6 +280,7 @@ def play_launch():
         batch_size=batch_size,
     )
 
+    # todo (misha): fixme
     visualizer = Visualizer(env.action_labels)
 
     simulator = Simulator(
