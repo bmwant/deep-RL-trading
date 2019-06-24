@@ -348,7 +348,7 @@ class PlayMarket(Environment):
         #     len(self.transactions) == self.max_slots,
         #     len(self.transactions) == 0,
         # ])
-        slots = np.zeros((self.window_state, 1), dtype=np.float32)
+        slots = np.zeros((self.max_slots, 1), dtype=np.float32)
         for i, t in enumerate(self.transactions):
             slots[i] = t.price
 
