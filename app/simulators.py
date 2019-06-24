@@ -199,7 +199,7 @@ class Simulator(object):
         path_record = os.path.join(fld_save, 'record.csv')
 
         with open(path_record, 'w') as f:
-            f.write('episode,game,pnl,rel,MA\n')
+            f.write('episode,game,safe_reward,MA_safe\n')
 
         for n in range(n_episode):
             print('{}/{} testing...'.format(n, n_episode))
@@ -210,16 +210,15 @@ class Simulator(object):
                 rand_price=True,
                 verbose=verbose,
             )
-            safe_total_reward = sum(safe_cum_rewards)
-            rel_reward = safe_cum_rewards[-1]
-            safe_total_rewards.append(rel_reward)
+
+            last_reward = safe_cum_rewards[-1]
+            safe_total_rewards.append(last_reward)
             MA_safe_total_rewards = np.median(
                 safe_cum_rewards[-self.ma_window:])
             ss = [
                 str(n),  # number of episode
                 self.env.title.replace(',', ';'),
                 '%.1f' % (safe_cum_rewards[-1]),  # pnl, safe cumulative rewards
-                '%.1f' % (safe_total_rewards[-1]),  # safe total rewards
                 '%.1f' % MA_safe_total_rewards  # moving average on safe total rewards
             ]
 
@@ -233,10 +232,15 @@ class Simulator(object):
                     '[S] reward',
                     'MA [S] reward',
                 ]
+
+                safe_reward = '%.2f' % last_reward
+                if last_reward > 0:
+                    safe_reward = click.style(safe_reward, fg='green')
+
                 data = [[
                     n,  # current episode
                     self.env.title,  # data label used for episode
-                    '%.2f' % (safe_cum_rewards[-1]),
+                    safe_reward,
                     '%.2f' % MA_safe_total_rewards,
                 ]]
                 print()

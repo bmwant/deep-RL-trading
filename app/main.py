@@ -242,10 +242,8 @@ def custom_launch():
 def play_launch():
     from app.sampler import PlaySampler
 
-    model_type = 'conv'
-
     sampler = PlaySampler(db_name='db2018_train.csv')
-    n_episode_training = 20
+    n_episode_training = 600
     n_episode_testing = sampler.test_samples
 
     window_state = 10  # num of days
@@ -263,14 +261,24 @@ def play_launch():
         window_state=window_state,
     )
 
+    # model_type = 'conv'
+    # model = get_model(
+    #     model_type=model_type,
+    #     env=env,
+    #     learning_rate=learning_rate,
+    # )
+
+    fld_save = os.path.join(
+        OUTPUT_FLD, 'Play_2018_300d_10s_test2'
+    )
+
+    model_type = 'pretrained'
+    fld_load_model = os.path.join(fld_save, 'model')
     model = get_model(
         model_type=model_type,
         env=env,
         learning_rate=learning_rate,
-    )
-
-    fld_save = os.path.join(
-        OUTPUT_FLD, 'Play_2018_300d_10s_test1'
+        fld_load=fld_load_model,
     )
 
     model.model.summary()
@@ -291,14 +299,15 @@ def play_launch():
         ma_window=ma_window,
     )
 
-    click.secho('Training agent...', fg='green')
-    simulator.train(
-        n_episode=n_episode_training,
-        save_per_episode=1,
-        exploration_init=exploration_init,
-        exploration_decay=exploration_decay,
-        exploration_min=exploration_min,
-    )
+    if model_type != 'pretrained':
+        click.secho('Training agent...', fg='green')
+        simulator.train(
+            n_episode=n_episode_training,
+            save_per_episode=1,
+            exploration_init=exploration_init,
+            exploration_decay=exploration_decay,
+            exploration_min=exploration_min,
+        )
 
     click.secho('Testing agent...', fg='green')
     simulator.test(

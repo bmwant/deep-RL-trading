@@ -106,16 +106,17 @@ class PlaySampler(Sampler):
     def __sample_db(self, training: bool = True) -> Tuple[np.ndarray, str]:
         if training:
             s = self.db[:self.EPISODE_LENGTH]
+            self.title = self.db_name
         else:
             s = self.db[self.i_db:self.i_db+self.EPISODE_LENGTH]
             self.i_db += 1
-        self.title = self.db_name
+            self.title = '{}_{}'.format(self.db_name, self.i_db)
 
         return s, self.title
 
     @property
     def test_samples(self):
-        return self.n_db - self.EPISODE_LENGTH
+        return self.n_db
 
 
 class PairSampler(Sampler):

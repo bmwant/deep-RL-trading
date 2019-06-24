@@ -39,6 +39,12 @@ $ python app/main.py
 $ python app/sampler.py
 ```
 
+* Leave agent training for a long period of time
+
+```bash
+$ caffeinate -sid python app/main.py
+```
+
 ### Authors
 
 * gxiang1228@gmail.com
