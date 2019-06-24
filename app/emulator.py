@@ -1,6 +1,10 @@
+from typing import List
+from collections import deque
+
 import click
 import numpy as np
 
+from app import lib
 from app.visualizer import show_state
 
 
@@ -18,6 +22,12 @@ def find_ideal(p, just_once=False):
             best = max(best, max(p[i+1:]) - p[i])
 
         return best
+
+
+class Transaction(object):
+    def __init__(self, buy: float, sale: float):
+        self.buy = buy
+        self.sale = sale
 
 
 class Environment(object):
@@ -56,7 +66,7 @@ class Market(Environment):
         window_state,
         open_cost,
         direction=1.,
-        risk_averse=0.
+        max_transactions: int = lib.MAX_TRANSACTIONS,
     ):
         # where to get data from
         self.sampler = sampler
@@ -67,7 +77,6 @@ class Market(Environment):
 
         # just default values
         self.direction = direction  # 1.
-        self.risk_averse = risk_averse  # 0.
 
         # number of possible actions
         self.n_action = 3
@@ -95,8 +104,12 @@ class Market(Environment):
         self._last_price = 0.
         self._last_price_norm = 0.
 
+        self.max_transactions = max_transactions
+        self.transactions = deque(maxlen=max_transactions)
+
     def reset(self, rand_price=True):
         self.empty = True
+        self.transactions = deque(maxlen=self.max_transactions)
         if rand_price:
             prices, self.title = self.sampler.sample()
             # get only first signal
@@ -125,16 +138,18 @@ class Market(Environment):
             state[:, i] = (state[:, i]/norm - 1.)*100
         return state
 
-    def get_valid_actions(self):
+    def get_valid_actions(self) -> List[int]:
         """
         0 - sell stock share/usd
         1 - buy stock share/usd
         2 - hold stock share/idle action
         """
-        if self.empty:
+        if len(self.transactions) == self.max_transactions:
+            return [0, 2]  # sell, idle
+        elif len(self.transactions) == 0:
             return [1, 2]  # buy, idle
         else:
-            return [0, 2]  # sell, idle
+            return [0, 1, 2]  # sell, buy, idle
 
     def get_noncash_reward(self, t=None, empty=None):
         if t is None:
@@ -180,22 +195,29 @@ class Market(Environment):
         )
 
     def stepv1(self, action, verbose=False):
+        verbose = False
         if action == 0:  # sell
-            reward = self.prices_norm[self.t] - self._last_price_norm
-            self.empty = True
+            t = self.transactions.popleft()
+            price = self.prices[self.t][0]  # price now
+            # t.sale - price that was previously
+            diff = price - t.sale  # our profit
+            reward = price
             if verbose:
                 click.secho('\n+', fg='green', nl=False)
-                print('%.2f->%.2f' % (self._last_price, self.prices[self.t]))
-                print('%.2f->%.2f' % (self._last_price_norm, self.prices_norm[self.t]))
-        elif action == 1:  # buy
-            reward = -self.open_cost
-            self._last_price = self.prices[self.t]
-            self._last_price_norm = self.prices_norm[self.t]
-            self.empty = False
+                print('%.2f->%.2f; %.2f' %
+                      (t.sale, price, diff))
+        elif action == 1:  # we buy usd
+            # add to list of transactions
+            t = Transaction(
+                buy=self.prices[self.t][0],
+                sale=self.prices[self.t][1],
+            )
+            self.transactions.append(t)
+            reward = -t.sale
             if verbose:
                 click.secho('-', fg='red', nl=False)
         elif action == 2:  # hold/do nothing
-            reward = 0.
+            reward = -0.2  # do not encorage waiting?
             if verbose:
                 click.secho('_', fg='blue', nl=False)
         else:
@@ -257,3 +279,7 @@ class Market(Environment):
             done,
             actions,
         )
+
+    @property
+    def hanging(self):
+        return sum([t.buy for t in self.transactions])

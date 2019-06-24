@@ -19,6 +19,12 @@ $ pip install -r requirements.txt
 $ pip install -e .
 ```
 
+Set matplotlib backend `~/.matplotlib/matplotlibrc`
+
+```text
+backend: qt5agg
+```
+
 ### Play with it
 
 * Launch main script

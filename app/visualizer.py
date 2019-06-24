@@ -141,7 +141,10 @@ class Visualizer(object):
         ax_reward.legend(loc='best', frameon=False)
         ax_reward.yaxis.tick_right()
         ylim = ax_reward.get_ylim()
-        ax_reward.set_ylim((max(-100, ylim[0]), min(100, ylim[1])))
+        ax_reward.set_ylim(
+            min(min(explored_total_rewards), min(safe_total_rewards)),
+            max(max(explored_total_rewards), max(safe_total_rewards)),
+        )
 
         if explored_total_rewards is not None:
             ax_exploration.plot(tt, np.array(explorations)*100., 'k')

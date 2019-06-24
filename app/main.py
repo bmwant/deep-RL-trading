@@ -161,7 +161,7 @@ def custom_launch():
     from app.sampler import PBSampler
 
     model_type = 'conv'
-    n_episode_training = 300
+    # n_episode_training = 300
     n_episode_testing = 1
     open_cost = 0.1
 
@@ -181,6 +181,9 @@ def custom_launch():
         window_state=window_state,
         open_cost=open_cost,
     )
+    # n_episode_training = len(sampler)
+    n_episode_training = 5
+
     model = get_model(
         model_type=model_type,
         env=env,
@@ -188,7 +191,8 @@ def custom_launch():
     )
 
     fld_save = os.path.join(
-        OUTPUT_FLD, 'PB_2018_180d_30s_test5'
+        # OUTPUT_FLD, 'PB_2018_180d_30s_test8'
+        OUTPUT_FLD, 'debug',
     )
 
     # fld_load_model = os.path.join(fld_save, 'model')
@@ -227,7 +231,6 @@ def custom_launch():
     )
 
     click.secho('Testing agent...', fg='green')
-
     simulator.test(
         n_episode=n_episode_testing,
         save_per_episode=1,
@@ -236,6 +239,76 @@ def custom_launch():
     )
 
 
+def debug_one_episode():
+    from app.sampler import PBSampler
+
+    model_type = 'conv'
+    n_episode_training = 1
+    n_episode_testing = 10
+    open_cost = 0.1
+
+    sampler = PBSampler()
+    window_state = 30  # set to month by default
+    learning_rate = 1e-4
+    discount_factor = 0.95
+    batch_size = 8
+
+    exploration_init = 1.  # always explore at the beginning
+    exploration_decay = 0.99
+    exploration_min = 0.01
+    ma_window = 60  # just to measure overall performance
+
+    env = Market(
+        sampler=sampler,
+        window_state=window_state,
+        open_cost=open_cost,
+    )
+    n_episode_training = len(sampler)
+    model = get_model(
+        model_type=model_type,
+        env=env,
+        learning_rate=learning_rate,
+    )
+
+    fld_save = os.path.join(
+        OUTPUT_FLD, 'debug'
+    )
+
+    # fld_load_model = os.path.join(fld_save, 'model')
+    # model = get_model(
+    #     model_type='pretrained',
+    #     env=env,
+    #     learning_rate=learning_rate,
+    #     fld_load=fld_load_model,
+    # )
+    model.model.summary()
+
+    agent = Agent(
+        model=model,
+        discount_factor=discount_factor,
+        batch_size=batch_size,
+    )
+
+    visualizer = Visualizer(env.action_labels)
+
+    # env.sampler.offset = 90
+    simulator = Simulator(
+        agent=agent,
+        env=env,
+        visualizer=visualizer,
+        fld_save=fld_save,
+        ma_window=ma_window,
+    )
+
+    click.secho('One episode play...', fg='green')
+    simulator.play_one_episode(
+        exploration=1,
+        rand_price=True,
+        verbose=True,
+    )
+
+
 if __name__ == '__main__':
     # main()
     custom_launch()
+    # debug_one_episode()

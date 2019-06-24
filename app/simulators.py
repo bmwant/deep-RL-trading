@@ -34,8 +34,8 @@ class Simulator(object):
             pass
 
         cum_rewards = [np.nan] * env_t
-        actions = [np.nan] * env_t
-        states = [None] * env_t
+        actions = [np.nan] * env_t  # history of previous actions
+        states = [None] * env_t  # history of previous states
         prev_cum_rewards = 0.
 
         while not done:
@@ -44,6 +44,12 @@ class Simulator(object):
             # next_state, reward, done, valid_actions = self.env.step_verbose(action)
 
             cum_rewards.append(prev_cum_rewards+reward)
+            # import ipdb; ipdb.set_trace()
+            # print('Step', self.env.t)
+            # print('Reward', reward)
+            # print(cum_rewards)
+            # print('='*30)
+            # print()
             prev_cum_rewards = cum_rewards[-1]
             actions.append(action)
             states.append(next_state)
@@ -53,7 +59,6 @@ class Simulator(object):
                 self.agent.replay()
 
             state = next_state
-
         return cum_rewards, actions, states
 
     def train(
@@ -90,6 +95,7 @@ class Simulator(object):
             explored_cum_rewards, explored_actions, _ = self.play_one_episode(
                 exploration,
                 rand_price=True,  # use new data for each new episode
+                verbose=True,
             )
             explored_total_rewards.append(100.*explored_cum_rewards[-1]/self.env.max_profit)
 
@@ -103,9 +109,9 @@ class Simulator(object):
                 safe_cum_rewards[-1]/self.env.max_profit*100.)
 
             MA_total_rewards = np.median(
-                explored_total_rewards[-self.ma_window:])
+                explored_cum_rewards[-self.ma_window:])
             MA_safe_total_rewards = np.median(
-                safe_total_rewards[-self.ma_window:])
+                safe_cum_rewards[-self.ma_window:])
 
             ss = [
                 str(n),
@@ -120,30 +126,29 @@ class Simulator(object):
             with open(path_record, 'a') as f:
                 f.write(','.join(ss)+'\n')
 
+            last_reward = safe_cum_rewards[-1]
+            profit = last_reward - self.env.hanging
             if verbose:
+                # print('Hanging', self.env.hanging)
                 header = [
                     '#',
                     'Data used',
                     'Exploration, %',
-                    'Reward, %',
-                    '[S] reward, %',
-                    'REL reward',
-                    'REL [S] reward',
-                    'MA reward, %',
-                    'MA [S] reward, %',
-                    'Max profit',
+                    '[E] reward',
+                    '[S] reward',
+                    'MA [E] reward',
+                    'MA [S] reward',
+                    'Profit',
                 ]
                 data = [[
                     n,  # current episode
                     self.env.title,  # data label used for episode
                     '%.1f' % (exploration * 100.),
-                    '%.2f' % (explored_total_rewards[-1]),
-                    '%.2f' % (safe_total_rewards[-1]),
-                    '%.2f' % (explored_cum_rewards[-1]),  # rel explored reward
-                    '%.2f' % (safe_cum_rewards[-1]),  # rel safe reward
+                    '%.2f' % (explored_cum_rewards[-1]),
+                    '%.2f' % (safe_cum_rewards[-1]),
                     '%.2f' % MA_total_rewards,
                     '%.2f' % MA_safe_total_rewards,
-                    '%.2f' % self.env.max_profit,
+                    '%.2f' % profit,
                 ]]
                 show_step(data=data, header=header)
 
@@ -158,6 +163,10 @@ class Simulator(object):
                     safe_cum_rewards, safe_actions,
                     os.path.join(fld_save, 'episode_%i.png'%(n)))
                 """
+            if safe_cum_rewards[-1] > 0:
+                import click
+                click.secho('Iteration: {}'.format(n), fg='red')
+                click.secho('Reward: {}'.format(last_reward), fg='red')
 
         if self.visualizer is not None:
             print('Plotting episodes', fld_save)
@@ -192,10 +201,11 @@ class Simulator(object):
                 rand_price=True,
                 verbose=verbose,
             )
+            safe_total_reward = sum(safe_cum_rewards)
             rel_reward = 100. * safe_cum_rewards[-1] / self.env.max_profit
             safe_total_rewards.append(rel_reward)
             MA_safe_total_rewards = np.median(
-                safe_total_rewards[-self.ma_window:])
+                safe_cum_rewards[-self.ma_window:])
             ss = [
                 str(n),  # number of episode
                 self.env.title.replace(',', ';'),
@@ -209,16 +219,16 @@ class Simulator(object):
 
             if verbose:
                 header = [
-                    '# (testing)', 'Data used',
-                    'Safe reward, %', 'MA safe reward, %',
-                    'Max profit'
+                    '# (testing)',
+                    'Data used',
+                    '[S] reward',
+                    'MA [S] reward',
                 ]
                 data = [[
                     n,  # current episode
                     self.env.title,  # data label used for episode
-                    '%.2f' % (safe_total_rewards[-1]),
+                    '%.2f' % (safe_cum_rewards[-1]),
                     '%.2f' % MA_safe_total_rewards,
-                    '%.2f' % self.env.max_profit,
                 ]]
                 print()
                 show_step(data=data, header=header)
