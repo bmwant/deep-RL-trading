@@ -1,4 +1,5 @@
 from typing import List
+from abc import ABC, abstractmethod
 from collections import deque
 
 import click
@@ -31,18 +32,23 @@ class Transaction(object):
 
 
 class Environment(object):
+    @abstractmethod
     def reset(self, *args, **kwargs):
         pass
 
+    @abstractmethod
     def get_state(self, *args, **kwargs):
         pass
 
+    @abstractmethod
     def get_valid_actions(self):
         pass
 
+    @abstractmethod
     def step(self, action):
         pass
 
+    @abstractmethod
     def get_reward(self, *args, **kwargs):
         pass
 
@@ -283,3 +289,110 @@ class Market(Environment):
     @property
     def hanging(self):
         return sum([t.buy for t in self.transactions])
+
+
+class PlayTransaction(object):
+    def __init__(self, price: float):
+        self.price = price
+
+
+class PlayMarket(Environment):
+    def __init__(self, sampler, window_state: int):
+        self.sampler = sampler
+        self.window_state = window_state
+
+        self.max_slots = lib.MAX_TRANSACTIONS
+        self.transactions = deque(maxlen=self.max_slots)
+
+        self.title: str = ''
+        self.prices = []
+
+        self.t = None
+        self.t0 = window_state - 1
+        self.t_max = None
+
+    def reset(self, rand_price=True):
+        self.transactions = deque(maxlen=self.max_slots)
+        if rand_price:
+            prices, self.title = self.sampler.sample()
+            self.prices = np.reshape(prices[:, 0], prices.shape[0]).copy()
+
+        self.t = self.t0
+        self.t_max = len(self.prices) - 1
+
+        # assert 100 data points steps in each episode
+        assert self.t_max - self.t + self.window_state == \
+            self.sampler.EPISODE_LENGTH
+        return self.get_state(), self.get_valid_actions()
+
+    def get_state(self, *args, **kwargs):
+        start_i = self.t - self.window_state + 1
+        end_i = self.t + 1
+        state = self.prices[start_i:end_i].copy()
+        # (can't buy, can't sale) pair
+        state = np.append(state, [
+            len(self.transactions) == self.max_slots,
+            len(self.transactions) == 0,
+        ])
+        return state
+
+    def get_valid_actions(self):
+        """
+        0 - sell stock share/usd
+        1 - buy stock share/usd
+        2 - hold stock share/idle action
+        """
+        if len(self.transactions) == self.max_slots:
+            return [0, 2]  # sell, idle
+        elif len(self.transactions) == 0:
+            return [1, 2]  # buy, idle
+        else:
+            return [0, 1, 2]  # sell, buy, idle
+
+    def step(self, action):
+        if action == 0:  # sell
+            slot = self.transactions.popleft()
+            price = self.prices[self.t]
+            diff = price - slot.price  # profit value
+            reward = price
+        elif action == 1:  # buy
+            slot = PlayTransaction(price=self.prices[self.t])
+            self.transactions.append(slot)
+            reward = -slot.price
+        elif action == 2:  # idle
+            reward = -0.2
+        else:
+            raise ValueError('No such action: %s' % action)
+
+        self.t += 1
+        done = self.t == self.t_max
+        state = self.get_state()
+        valid_actions = self.get_valid_actions()
+        return (
+            state,
+            reward,
+            done,
+            valid_actions,
+        )
+
+    def get_reward(self, *args, **kwargs):
+        pass
+
+
+def test_play_environment():
+    from app.sampler import PlaySampler
+    from app.plots import plot_state_window
+
+    sampler = PlaySampler(db_name='db00.csv')
+    env = PlayMarket(
+        sampler=sampler,
+        window_state=10,
+    )
+
+    state, actions = env.reset(rand_price=True)
+    print(state)
+    plot_state_window(state)
+
+
+if __name__ == '__main__':
+    test_play_environment()
