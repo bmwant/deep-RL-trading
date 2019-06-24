@@ -1,6 +1,8 @@
 import os
 import numpy as np
 
+import click
+
 from app.lib import makedirs
 from app.lib import DEFAULT_MA_WINDOW
 from app.visualizer import show_step
@@ -17,6 +19,7 @@ class Simulator(object):
         self.ma_window = ma_window
         self.visualizer = visualizer
         self.fld_save = fld_save  # directory where to save results
+        self._best_result = 0
 
     def play_one_episode(
         self,
@@ -25,7 +28,8 @@ class Simulator(object):
         rand_price=True,
         verbose=False,
     ):
-        state, valid_actions = self.env.reset(rand_price=rand_price)
+        state, valid_actions = self.env.reset(
+            rand_price=rand_price, training=training)
         done = False
         env_t = 0
         try:
@@ -40,7 +44,8 @@ class Simulator(object):
 
         while not done:
             action = self.agent.act(state, exploration, valid_actions)
-            next_state, reward, done, valid_actions = self.env.step(action, verbose=verbose)
+            next_state, reward, done, valid_actions = self.env.step(
+                action, verbose=verbose,)
             # next_state, reward, done, valid_actions = self.env.step_verbose(action)
 
             cum_rewards.append(prev_cum_rewards+reward)
@@ -86,7 +91,8 @@ class Simulator(object):
         path_record = os.path.join(fld_save, 'record.csv')
 
         with open(path_record, 'w') as f:
-            f.write('episode,game,exploration,explored,safe,MA_explored,MA_safe\n')
+            f.write('episode,game,exploration,explored_reward,'
+                    'safe_reward,MA_explored,MA_safe\n')
 
         for n in range(n_episode):
             print('{}/{} training...'.format(n, n_episode))
@@ -97,7 +103,7 @@ class Simulator(object):
                 rand_price=True,  # use new data for each new episode
                 verbose=True,
             )
-            explored_total_rewards.append(100.*explored_cum_rewards[-1]/self.env.max_profit)
+            explored_total_rewards.append(explored_cum_rewards[-1])
 
             # Safe values: exploration is completely disabled
             safe_cum_rewards, safe_actions, _ = self.play_one_episode(
@@ -105,13 +111,12 @@ class Simulator(object):
                 training=False,  # do not append to replay buffer
                 rand_price=False,  # reuse previous sampled prices
             )
-            safe_total_rewards.append(
-                safe_cum_rewards[-1]/self.env.max_profit*100.)
+            safe_total_rewards.append(safe_cum_rewards[-1])
 
             MA_total_rewards = np.median(
-                explored_cum_rewards[-self.ma_window:])
+                explored_total_rewards[-self.ma_window:])
             MA_safe_total_rewards = np.median(
-                safe_cum_rewards[-self.ma_window:])
+                safe_total_rewards[-self.ma_window:])
 
             ss = [
                 str(n),
@@ -138,23 +143,31 @@ class Simulator(object):
                     '[S] reward',
                     'MA [E] reward',
                     'MA [S] reward',
-                    'Profit',
                 ]
+                explored_rewards = '%.2f' % (explored_cum_rewards[-1])
+                safe_rewards = '%.2f' % (safe_cum_rewards[-1])
+                if explored_cum_rewards[-1] > 0:
+                    explored_rewards = click.style(explored_rewards, fg='green')
+                if safe_cum_rewards[-1] > 0:
+                    safe_rewards = click.style(safe_rewards, fg='green')
+
                 data = [[
                     n,  # current episode
                     self.env.title,  # data label used for episode
                     '%.1f' % (exploration * 100.),
-                    '%.2f' % (explored_cum_rewards[-1]),
-                    '%.2f' % (safe_cum_rewards[-1]),
+                    explored_rewards,
+                    safe_rewards,
                     '%.2f' % MA_total_rewards,
                     '%.2f' % MA_safe_total_rewards,
-                    '%.2f' % profit,
+                    # '%.2f' % profit,
                 ]]
                 show_step(data=data, header=header)
 
-            if n % save_per_episode == 0:
-                print('saving results...')
+            # if n % save_per_episode == 0:
+            if last_reward > self._best_result:
+                print('{} saving results...'.format(n))
                 self.agent.save(fld_model)
+                self._best_result = last_reward
 
                 """
                 self.visualizer.plot_a_episode(
@@ -163,10 +176,6 @@ class Simulator(object):
                     safe_cum_rewards, safe_actions,
                     os.path.join(fld_save, 'episode_%i.png'%(n)))
                 """
-            if safe_cum_rewards[-1] > 0:
-                import click
-                click.secho('Iteration: {}'.format(n), fg='red')
-                click.secho('Reward: {}'.format(last_reward), fg='red')
 
         if self.visualizer is not None:
             print('Plotting episodes', fld_save)
@@ -202,7 +211,7 @@ class Simulator(object):
                 verbose=verbose,
             )
             safe_total_reward = sum(safe_cum_rewards)
-            rel_reward = 100. * safe_cum_rewards[-1] / self.env.max_profit
+            rel_reward = safe_cum_rewards[-1]
             safe_total_rewards.append(rel_reward)
             MA_safe_total_rewards = np.median(
                 safe_cum_rewards[-self.ma_window:])

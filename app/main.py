@@ -243,10 +243,11 @@ def play_launch():
     from app.sampler import PlaySampler
 
     model_type = 'conv'
-    n_episode_training = 400
-    n_episode_testing = 1  # anyway we are reusing same data
 
     sampler = PlaySampler(db_name='db2018_train.csv')
+    n_episode_training = 20
+    n_episode_testing = sampler.test_samples
+
     window_state = 10  # num of days
     learning_rate = 1e-4
     discount_factor = 0.95
@@ -280,7 +281,6 @@ def play_launch():
         batch_size=batch_size,
     )
 
-    # todo (misha): fixme
     visualizer = Visualizer(env.action_labels)
 
     simulator = Simulator(
@@ -303,7 +303,7 @@ def play_launch():
     click.secho('Testing agent...', fg='green')
     simulator.test(
         n_episode=n_episode_testing,
-        save_per_episode=5,
+        save_per_episode=1,
         subfld='out-sample-testing',
         verbose=True,
     )

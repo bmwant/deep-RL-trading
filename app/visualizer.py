@@ -67,7 +67,7 @@ class Visualizer(object):
 
         ls = ['-', '--']
         for i in range(min(2, env.prices.shape[1])):
-            p = env.prices[:,i]/env.prices[0,i]*100 - 100
+            p = env.prices[:, i]/env.prices[0, i]*100 - 100
             ax_price.plot(p, 'k'+ls[i], label='input%i - 100' % i)
 
         ax_price.plot(explored_cum_rewards, 'b', label='explored P&L')

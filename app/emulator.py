@@ -307,8 +307,11 @@ class PlayMarket(Environment):
         self.title: str = ''
         self.prices = []
 
-        # two extra flags
-        self.state_shape = (window_state+2, self.sampler.n_var)
+        # todo (misha): remove me
+        self.max_profit = 1
+        assert self.max_slots == self.window_state, 'Fix state shape'
+
+        self.state_shape = (window_state, self.sampler.n_var+1)
         # labels for actions
         self.action_labels = [
             'sell',
@@ -321,11 +324,11 @@ class PlayMarket(Environment):
         self.t0 = window_state - 1
         self.t_max = None
 
-    def reset(self, rand_price=True):
+    def reset(self, rand_price=True, training=True):
         self.transactions = deque(maxlen=self.max_slots)
         if rand_price:
-            prices, self.title = self.sampler.sample()
-            self.prices = np.reshape(prices[:, 0], prices.shape[0]).copy()
+            self.prices, self.title = self.sampler.sample(training)
+            # self.prices = np.reshape(prices[:, 0], prices.shape[0]).copy()
 
         self.t = self.t0
         self.t_max = len(self.prices) - 1
@@ -341,11 +344,15 @@ class PlayMarket(Environment):
         end_i = self.t + 1
         state = self.prices[start_i:end_i].copy()
         # (can't buy, can't sale) pair
-        state = np.append(state, [
-            len(self.transactions) == self.max_slots,
-            len(self.transactions) == 0,
-        ])
-        return state
+        # state = np.append(state, [
+        #     len(self.transactions) == self.max_slots,
+        #     len(self.transactions) == 0,
+        # ])
+        slots = np.zeros((self.window_state, 1), dtype=np.float32)
+        for i, t in enumerate(self.transactions):
+            slots[i] = t.price
+
+        return np.hstack((state, slots)).copy()
 
     def get_valid_actions(self):
         """
@@ -363,11 +370,11 @@ class PlayMarket(Environment):
     def step(self, action, verbose=True):
         if action == 0:  # sell
             slot = self.transactions.popleft()
-            price = self.prices[self.t]
+            price = self.prices[self.t][0]
             diff = price - slot.price  # profit value
             reward = price
         elif action == 1:  # buy
-            slot = PlayTransaction(price=self.prices[self.t])
+            slot = PlayTransaction(price=self.prices[self.t][0])
             self.transactions.append(slot)
             reward = -slot.price
         elif action == 2:  # idle
@@ -388,10 +395,6 @@ class PlayMarket(Environment):
 
     def get_reward(self, *args, **kwargs):
         pass
-
-    @property
-    def max_profit(self):
-        return 100.0
 
 
 def test_play_environment():
