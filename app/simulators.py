@@ -5,6 +5,7 @@ import click
 
 from app.lib import makedirs
 from app.lib import DEFAULT_MA_WINDOW
+from app.plots import show_step_chart
 from app.visualizer import show_step
 
 
@@ -65,13 +66,19 @@ class Simulator(object):
 
             state = next_state
             if verbose and not training:
-                from app.plots import show_episode
-                show_episode(
+                save_path = os.path.join(
+                    self.fld_save,
+                    'steps',
+                    'step_%d' % self.env.t,
+                )
+                show_step_chart(
                     prices=self.env.prices,
                     slots=self.env.slots.transpose(),
                     actions=actions,
                     step=self.env.t,
+                    save_path=save_path,
                 )
+
         return cum_rewards, actions, states
 
     def train(
@@ -255,13 +262,7 @@ class Simulator(object):
                 show_step(data=data, header=header)
 
             if n % save_per_episode == 0:
-                from app.plots import show_actions, show_episode
-                show_episode(
-                    prices=self.env.prices,
-                    slots=self.env.slots.transpose(),
-                    actions=safe_actions,
-                )
-                # show_actions(safe_actions)
+                pass
 
             if self.visualizer is not None:
                 self.visualizer.plot_a_episode(

@@ -2,7 +2,6 @@ from typing import List
 
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
-import matplotlib.ticker as ticker
 import numpy as np
 
 
@@ -53,14 +52,14 @@ def main():
     plt.show()
 
 
-# todo (misha): it's show step
-def show_episode(
+def show_step_chart(
         *,
         prices,
         slots,
         actions,
         step: int = 0,
         window_state: int = 30,
+        save_path=None,
 ):
     fig, (ax1, ax2, ax3, ax4) = plt.subplots(
         4, 1,
@@ -80,7 +79,11 @@ def show_episode(
     _show_actions(ax4, actions=actions, step=step)
 
     plt.tight_layout()
-    plt.show()
+    if save_path is None:
+        plt.show()
+    else:
+        plt.savefig(save_path)
+        plt.close()
 
 
 def _show_prices(ax, prices, step: int = 0, window_state: int = 0):
@@ -98,8 +101,8 @@ def _show_prices(ax, prices, step: int = 0, window_state: int = 0):
 def _show_state(ax, state, step: int = 0):
     window_state = len(state)
     ax.set_title('State (window: %d days)' % window_state)
-    i_start = step-window_state
-    i_end = step+1
+    i_start = step - window_state
+    i_end = step + 1
     ax.set_xticklabels(np.arange(i_start, i_end, step=5))
     ax_xticks = np.arange(0, window_state+1, step=5)
     ax_minor_xticks = np.arange(0, window_state+1, step=1)
@@ -133,18 +136,20 @@ def _show_slots(ax, slots):
 
 
 def _show_actions(ax, actions: List[int], step: int = 0):
+    cols = 30  # show last actions
+    step = max(step, cols)  # make sure we can slice this window
     ax.grid(True)
-    ax_ticks = np.arange(0, 30 + 1, step=1)
+    ax_ticks = np.arange(0, cols + 1, step=1)
     ax.set_xticks(ax_ticks)
+    ax.set_xticklabels(np.arange(step-cols, step, step=1))
     actions_labels = ['sell', 'buy', 'hold']
     ax.set_yticks(np.arange(len(actions_labels)))
     ax.set_yticklabels(actions_labels)
 
     rows = len(actions_labels)
-    cols = 30  # show last actions
-    ax.set_title('Actions (last %d)' % cols)
+    ax.set_title('Actions (recent %d)' % cols)
     matrix = np.zeros((rows, cols))
-    actions = actions[step:step+cols]  # todo (misha): be careful
+    actions = actions[step-cols:step]  # todo (misha): be careful
     for i, action in enumerate(actions):
         if not np.isnan(action):
             matrix[action, i] = action + 1
