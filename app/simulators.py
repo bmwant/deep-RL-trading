@@ -64,6 +64,14 @@ class Simulator(object):
                 self.agent.replay()
 
             state = next_state
+            if verbose and not training:
+                from app.plots import show_episode
+                show_episode(
+                    prices=self.env.prices,
+                    slots=self.env.slots.transpose(),
+                    actions=actions,
+                    step=self.env.t,
+                )
         return cum_rewards, actions, states
 
     def train(

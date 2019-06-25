@@ -53,6 +53,7 @@ def main():
     plt.show()
 
 
+# todo (misha): it's show step
 def show_episode(
         *,
         prices,
@@ -61,63 +62,99 @@ def show_episode(
         step: int = 0,
         window_state: int = 30,
 ):
-    fig, ((ax1, ax2, ax3, ax4)) = plt.subplots(
+    fig, (ax1, ax2, ax3, ax4) = plt.subplots(
         4, 1,
         sharex=False, sharey=False,
         figsize=(10, 8),
     )
-    fig.canvas.set_window_title('Episode #0')
+    fig.canvas.set_window_title('Episode #0. Position #%d' % step)
 
-    ax1.set_title('Prices (%d days)' % len(prices))
-    ax1.plot(prices)
-    ax1_xticks = np.arange(0, len(prices)+1, step=30)
-    ax1.set_xticks(ax1_xticks)
-    ax1_yticks = np.arange(0, 11, step=2)  # max price parametrized
-    ax1.set_yticks(ax1_yticks)
+    _show_prices(ax1, prices=prices, step=step, window_state=window_state)
+
+    # what does agent see
+    state = prices[step-window_state:step].transpose()[0]
+    _show_state(ax2, state=state, step=step)
+
+    _show_slots(ax3, slots=slots)
+
+    _show_actions(ax4, actions=actions, step=step)
+
+    plt.tight_layout()
+    plt.show()
+
+
+def _show_prices(ax, prices, step: int = 0, window_state: int = 0):
+    ax.set_title('Prices (%d days)' % len(prices))
+    ax.plot(prices)
+    ax_xticks = np.arange(0, len(prices) + 1, step=30)
+    ax.set_xticks(ax_xticks)
+    ax_yticks = np.arange(0, 11, step=2)  # max price parametrized
+    ax.set_yticks(ax_yticks)
     # Build vertical lines to show current state window
-    ax1.axvline(x=step, color='m', linestyle=':')
-    ax1.axvline(x=step+window_state, color='m', linestyle=':')
+    ax.axvline(x=step - window_state, color='m', linestyle=':')
+    ax.axvline(x=step, color='m', linestyle=':')
 
-    ax2.set_title('State (window: %d days)' % window_state)
-    ax2_xticks = np.arange(step, step+window_state+1, step=5)
-    ax2_minor_xticks = np.arange(step, step+window_state+1, step=1)
-    ax2.set_xticks(ax2_xticks)
-    ax2.set_xticks(ax2_minor_xticks, minor=True)
-    ax2_yticks = np.arange(0, 11, step=1)  # max price parametrized
-    ax2.set_yticks(ax2_yticks)
-    state = prices[step:step+window_state].transpose()[0]
-    ax2.bar(
+
+def _show_state(ax, state, step: int = 0):
+    window_state = len(state)
+    ax.set_title('State (window: %d days)' % window_state)
+    i_start = step-window_state
+    i_end = step+1
+    ax.set_xticklabels(np.arange(i_start, i_end, step=5))
+    ax_xticks = np.arange(0, window_state+1, step=5)
+    ax_minor_xticks = np.arange(0, window_state+1, step=1)
+    ax.set_xticks(ax_xticks)
+    ax.set_xticks(ax_minor_xticks, minor=True)
+    ax.set_ylim(0, 11)
+    ax_yticks = np.arange(0, 11, step=1)  # max price parametrized
+    ax.set_yticks(ax_yticks)
+
+    ax.bar(
         np.arange(len(state)), state, align='edge', width=1., color='tab:pink')
-    ax2.grid(True, which='both')
-    ax2.set_aspect('equal')
+    ax.grid(True, which='both')
+    ax.set_aspect('equal')
 
-    ax3.set_title('Slots (max size: 10)')
+
+def _show_slots(ax, slots):
+    ax.set_title('Slots (max size: 10)')
     slots_labels = ['price']
-    im = ax3.imshow(slots, cmap='RdPu')
-    ax3.set_xticks(np.arange(len(slots[0])))
-    ax3.set_yticks(np.arange(len(slots_labels)))
-    ax3.set_yticklabels(slots_labels)
-
-    # Loop over data dimensions and create text annotations.
+    im = ax.imshow(slots, cmap='RdPu')
+    ax.set_xticks(np.arange(len(slots[0])))
+    ax.set_yticks(np.arange(len(slots_labels)))
+    ax.set_yticklabels(slots_labels)
+    # Create text annotations with prices
     for i in range(len(slots[0])):
         text = '%.2f' % slots[0, i]
         color = 'w'
         if not slots[0, i]:
             text = 'empty'
             color = 'k'
+        ax.text(i, 0, text, ha='center', va='center', color=color)
 
-        ax3.text(i, 0, text, ha='center', va='center', color=color)
 
-    ax4.set_title('Actions (last 30)')
-    ax4.grid(True)
-    ax4_ticks = np.arange(0, 30 + 1, step=1)
-    ax4.set_xticks(ax4_ticks)
-    actions = ['sell', 'buy', 'hold']
-    ax4.set_yticks(np.arange(len(actions)))
-    ax4.set_yticklabels(actions)
+def _show_actions(ax, actions: List[int], step: int = 0):
+    ax.grid(True)
+    ax_ticks = np.arange(0, 30 + 1, step=1)
+    ax.set_xticks(ax_ticks)
+    actions_labels = ['sell', 'buy', 'hold']
+    ax.set_yticks(np.arange(len(actions_labels)))
+    ax.set_yticklabels(actions_labels)
 
-    plt.tight_layout()
-    plt.show()
+    rows = len(actions_labels)
+    cols = 30  # show last actions
+    ax.set_title('Actions (last %d)' % cols)
+    matrix = np.zeros((rows, cols))
+    actions = actions[step:step+cols]  # todo (misha): be careful
+    for i, action in enumerate(actions):
+        if not np.isnan(action):
+            matrix[action, i] = action + 1
+
+    cmap = mcolors.ListedColormap(['w', 'tab:green', 'tab:red', 'tab:cyan'])
+    im = ax.imshow(
+        matrix,
+        cmap=cmap,
+        extent=(0, cols, rows, 0),
+    )
 
 
 def show_actions(data: List[int]):
