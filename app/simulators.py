@@ -247,8 +247,9 @@ class Simulator(object):
                 show_step(data=data, header=header)
 
             if n % save_per_episode == 0:
-                from app.plots import show_actions
-                show_actions(safe_actions)
+                from app.plots import show_actions, show_episode
+                show_episode(self.env.prices)
+                # show_actions(safe_actions)
 
             if self.visualizer is not None:
                 self.visualizer.plot_a_episode(

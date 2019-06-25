@@ -244,7 +244,8 @@ def play_launch():
 
     sampler = PlaySampler(db_name='db2018_train.csv')
     n_episode_training = 2000
-    n_episode_testing = sampler.test_samples
+    # n_episode_testing = sampler.test_samples
+    n_episode_testing = 1
 
     window_state = 30  # num of days
     learning_rate = 1e-4
