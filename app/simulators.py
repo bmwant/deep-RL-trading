@@ -248,7 +248,11 @@ class Simulator(object):
 
             if n % save_per_episode == 0:
                 from app.plots import show_actions, show_episode
-                show_episode(self.env.prices)
+                show_episode(
+                    prices=self.env.prices,
+                    slots=self.env.slots.transpose(),
+                    actions=safe_actions,
+                )
                 # show_actions(safe_actions)
 
             if self.visualizer is not None:

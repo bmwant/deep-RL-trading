@@ -339,6 +339,13 @@ class PlayMarket(Environment):
         # todo (misha): maybe set state shape here?
         return self.get_state(), self.get_valid_actions()
 
+    @property
+    def slots(self):
+        slots_ = np.zeros((self.max_slots, 1), dtype=np.float32)
+        for i, t in enumerate(self.transactions):
+            slots_[i] = t.price
+        return slots_
+
     def get_state(self, *args, **kwargs):
         start_i = self.t - self.window_state + 1
         end_i = self.t + 1

@@ -25,40 +25,39 @@ def plot_state_prices_window(data):
 
 
 def main():
-    x = [1 ,3,5,3, 4,5, 6,23, 2,3]
-    fig, ((ax1, ax2, ax3, ax4)) = plt.subplots(
-        4, 1,
-        sharex=False, sharey=False,
-        figsize=(10, 8),
-    )
-    fig.canvas.set_window_title('Episode #0')
+    vegetables = ["cucumber"]
+    farmers = ["Farmer Joe", "Upland Bros.", "Smith Gardening",
+               "Agrifun", "Organiculture", "BioGoods Ltd.", "Cornylee Corp."]
 
-    ax1.set_title('Prices (300 days)')
-    ax1.plot(x)
+    harvest = np.array([[0.8, 2.4, 2.5, 3.9, 0.0, 4.0, 0.0],
+                        ])
 
+    fig, ax = plt.subplots()
+    im = ax.imshow(harvest)
 
-    ax2.set_title('State (window: 30 days)')
-    ax2.grid(True)
-    ax2_ticks = np.arange(0, 30 + 1, step=1)
-    ax2.set_xticks(ax2_ticks)
+    # We want to show all ticks...
+    ax.set_xticks(np.arange(len(farmers)))
+    ax.set_yticks(np.arange(len(vegetables)))
+    ax.set_yticklabels(vegetables)
 
+    # Rotate the tick labels and set their alignment.
+    # plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
+    #          rotation_mode="anchor")
 
-    ax3.set_title('Slots (max size: 10)')
+    # Loop over data dimensions and create text annotations.
+    for i in range(len(farmers)):
+        text = ax.text(i, 0, harvest[0, i],
+                       ha="center", va="center", color="w")
 
-    ax4.set_title('Actions (last 30)')
-    ax4.grid(True)
-    ax4_ticks = np.arange(0, 30 + 1, step=1)
-    ax4.set_xticks(ax4_ticks)
-    actions = ['sell', 'buy', 'hold']
-    ax4.set_yticks(np.arange(len(actions)))
-    ax4.set_yticklabels(actions)
-
-    plt.tight_layout()
+    fig.tight_layout()
     plt.show()
 
 
 def show_episode(
+        *,
         prices,
+        slots,
+        actions,
         step: int = 0,
         window_state: int = 30,
 ):
@@ -80,7 +79,6 @@ def show_episode(
     ax1.axvline(x=step+window_state, color='m', linestyle=':')
 
     ax2.set_title('State (window: %d days)' % window_state)
-
     ax2_xticks = np.arange(step, step+window_state+1, step=5)
     ax2_minor_xticks = np.arange(step, step+window_state+1, step=1)
     ax2.set_xticks(ax2_xticks)
@@ -94,6 +92,21 @@ def show_episode(
     ax2.set_aspect('equal')
 
     ax3.set_title('Slots (max size: 10)')
+    slots_labels = ['price']
+    im = ax3.imshow(slots, cmap='RdPu')
+    ax3.set_xticks(np.arange(len(slots[0])))
+    ax3.set_yticks(np.arange(len(slots_labels)))
+    ax3.set_yticklabels(slots_labels)
+
+    # Loop over data dimensions and create text annotations.
+    for i in range(len(slots[0])):
+        text = '%.2f' % slots[0, i]
+        color = 'w'
+        if not slots[0, i]:
+            text = 'empty'
+            color = 'k'
+
+        ax3.text(i, 0, text, ha='center', va='center', color=color)
 
     ax4.set_title('Actions (last 30)')
     ax4.grid(True)
