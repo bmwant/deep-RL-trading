@@ -66,11 +66,9 @@ class Simulator(object):
 
             state = next_state
             if verbose and not training:
-                save_path = os.path.join(
-                    self.fld_save,
-                    'steps',
-                    'step_%d' % self.env.t,
-                )
+                steps_path = os.path.join(self.fld_save, 'steps')
+                makedirs(steps_path)
+                save_path = os.path.join(steps_path, 'step_%d' % self.env.t)
                 show_step_chart(
                     prices=self.env.prices,
                     slots=self.env.slots.transpose(),

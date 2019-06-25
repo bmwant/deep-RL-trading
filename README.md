@@ -45,6 +45,16 @@ $ python app/sampler.py
 $ caffeinate -sid python app/main.py
 ```
 
+
+### Utils
+
+* Convert data (scale within a range)
+
+```bash
+$ python app/converter.py data/PBSamplerDB/uah_to_usd_2018.csv \
+    data/uah_to_usd_2018_scaled_1_10.csv
+```
+
 ### Authors
 
 * gxiang1228@gmail.com

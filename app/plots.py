@@ -23,33 +23,12 @@ def plot_state_prices_window(data):
     plt.show()
 
 
-def main():
-    vegetables = ["cucumber"]
-    farmers = ["Farmer Joe", "Upland Bros.", "Smith Gardening",
-               "Agrifun", "Organiculture", "BioGoods Ltd.", "Cornylee Corp."]
-
-    harvest = np.array([[0.8, 2.4, 2.5, 3.9, 0.0, 4.0, 0.0],
-                        ])
-
-    fig, ax = plt.subplots()
-    im = ax.imshow(harvest)
-
-    # We want to show all ticks...
-    ax.set_xticks(np.arange(len(farmers)))
-    ax.set_yticks(np.arange(len(vegetables)))
-    ax.set_yticklabels(vegetables)
-
-    # Rotate the tick labels and set their alignment.
-    # plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
-    #          rotation_mode="anchor")
-
-    # Loop over data dimensions and create text annotations.
-    for i in range(len(farmers)):
-        text = ax.text(i, 0, harvest[0, i],
-                       ha="center", va="center", color="w")
-
-    fig.tight_layout()
-    plt.show()
+def show_episode_chart():
+    fig, (ax1, ax2, ax3, ax4) = plt.subplots(
+        3, 1,
+        sharex=False, sharey=False,
+        figsize=(10, 8),
+    )
 
 
 def show_step_chart(
@@ -167,6 +146,7 @@ def show_actions(data: List[int]):
     https://matplotlib.org/3.1.0/gallery/images_contours_and_fields/image_annotated_heatmap.html#sphx-glr-gallery-images-contours-and-fields-image-annotated-heatmap-py
     """
     SHOW_LAST_N = 30
+    # todo (misha): this is wrong, we should map values to colors
     cmap = mcolors.ListedColormap(['w', 'tab:green', 'tab:red', 'tab:cyan'])
     actions = ['sell', 'buy', 'hold']
     data = data[-SHOW_LAST_N:]
@@ -187,6 +167,10 @@ def show_actions(data: List[int]):
     plt.grid(True)
     plt.tight_layout()
     plt.show()
+
+
+def main():
+    pass
 
 
 if __name__ == '__main__':

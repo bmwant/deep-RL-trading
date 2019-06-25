@@ -242,8 +242,9 @@ def custom_launch():
 def play_launch():
     from app.sampler import PlaySampler
 
-    sampler = PlaySampler(db_name='db2018_train.csv')
-    n_episode_training = 2000
+    db_name = 'uah_to_usd_2018_scaled_1_10.csv'
+    sampler = PlaySampler(db_name=db_name)
+    n_episode_training = 500
     # n_episode_testing = sampler.test_samples
     n_episode_testing = 1
 
@@ -262,25 +263,25 @@ def play_launch():
         window_state=window_state,
     )
 
-    # model_type = 'conv'
-    # model = get_model(
-    #     model_type=model_type,
-    #     env=env,
-    #     learning_rate=learning_rate,
-    # )
-
-    fld_save = os.path.join(
-        OUTPUT_FLD, 'Play_2018_300d_30s_test1'
-    )
-
-    model_type = 'pretrained'
-    fld_load_model = os.path.join(fld_save, 'model')
+    model_type = 'conv'
     model = get_model(
         model_type=model_type,
         env=env,
         learning_rate=learning_rate,
-        fld_load=fld_load_model,
     )
+
+    fld_save = os.path.join(
+        OUTPUT_FLD, 'Play_2018_300d_30s_scaled1'
+    )
+
+    # model_type = 'pretrained'
+    # fld_load_model = os.path.join(fld_save, 'model')
+    # model = get_model(
+    #     model_type=model_type,
+    #     env=env,
+    #     learning_rate=learning_rate,
+    #     fld_load=fld_load_model,
+    # )
 
     model.model.summary()
 

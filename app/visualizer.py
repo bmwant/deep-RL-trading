@@ -108,7 +108,7 @@ class Visualizer(object):
         explorations,
         fig_path,
     ):
-        f = plt.figure(figsize=(14, 10))	 # width, height in inch (100 pixel)
+        f = plt.figure(figsize=(14, 10))  # width, height in inch (100 pixel)
         if explored_total_rewards is None:
             f, ax_reward = plt.subplots()
         else:
@@ -136,7 +136,6 @@ class Visualizer(object):
         ax_reward.plot(tt, std, 'r--', label='safe std', linewidth=2)
 
         ax_reward.axhline(y=0, color='k', linestyle=':')
-        #ax_reward.axhline(y=60, color='k', linestyle=':')
         ax_reward.set_ylabel('total reward')
         ax_reward.legend(loc='best', frameon=False)
         ax_reward.yaxis.tick_right()
