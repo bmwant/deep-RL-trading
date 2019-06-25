@@ -261,25 +261,25 @@ def play_launch():
         window_state=window_state,
     )
 
-    model_type = 'conv'
-    model = get_model(
-        model_type=model_type,
-        env=env,
-        learning_rate=learning_rate,
-    )
+    # model_type = 'conv'
+    # model = get_model(
+    #     model_type=model_type,
+    #     env=env,
+    #     learning_rate=learning_rate,
+    # )
 
     fld_save = os.path.join(
         OUTPUT_FLD, 'Play_2018_300d_30s_test1'
     )
 
-    # model_type = 'pretrained'
-    # fld_load_model = os.path.join(fld_save, 'model')
-    # model = get_model(
-    #     model_type=model_type,
-    #     env=env,
-    #     learning_rate=learning_rate,
-    #     fld_load=fld_load_model,
-    # )
+    model_type = 'pretrained'
+    fld_load_model = os.path.join(fld_save, 'model')
+    model = get_model(
+        model_type=model_type,
+        env=env,
+        learning_rate=learning_rate,
+        fld_load=fld_load_model,
+    )
 
     model.model.summary()
 
