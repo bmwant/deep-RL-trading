@@ -99,16 +99,16 @@ class PlaySampler(Sampler):
         self.testing = testing
 
     def load_db(self, db_path):
-        db = np.genfromtxt(db_path, delimiter=',')
-        self.db = np.expand_dims(db, axis=1)
+        self.db = np.genfromtxt(db_path, delimiter=',')
+        # self.db = np.expand_dims(db, axis=1)
         self.sample = self.__sample_db
 
     def __sample_db(self, training: bool = True) -> Tuple[np.ndarray, str]:
         if training:
-            s = self.db[:self.EPISODE_LENGTH]
+            s = self.db[:self.EPISODE_LENGTH, :]
             self.title = self.db_name
         else:
-            s = self.db[self.i_db:self.i_db+self.EPISODE_LENGTH]
+            s = self.db[self.i_db:self.i_db+self.EPISODE_LENGTH, :]
             self.i_db += 1
             self.title = '{}_{}'.format(self.db_name, self.i_db)
 

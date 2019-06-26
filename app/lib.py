@@ -8,6 +8,7 @@ OUTPUT_FLD = os.path.join(ROOT_DIR, 'results')
 # length of dataset used when training
 DATASET_LENGTH = 180  # default to 6 months
 DEFAULT_MA_WINDOW = 100
+IDLE_REWARD = -0.4  # small punishment not to idle
 MAX_TRANSACTIONS = 10
 
 ACTIONS = {

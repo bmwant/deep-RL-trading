@@ -242,21 +242,21 @@ def custom_launch():
 def play_launch():
     from app.sampler import PlaySampler
 
-    db_name = 'uah_to_usd_2018_scaled_1_10.csv'
+    db_name = 'uah_to_usd_2018_both_scaled_1_10.csv'
     sampler = PlaySampler(db_name=db_name)
-    n_episode_training = 50
+    n_episode_training = 600
     # n_episode_testing = sampler.test_samples
     n_episode_testing = 1
 
-    window_state = 30  # num of days
+    window_state = 60  # num of days
     learning_rate = 1e-4
-    discount_factor = 0.95
+    discount_factor = 0.98
     batch_size = 8
 
     exploration_init = 1.  # always explore at the beginning
     exploration_decay = 0.99
     exploration_min = 0.1
-    ma_window = 60
+    ma_window = 80
 
     env = PlayMarket(
         sampler=sampler,
@@ -271,8 +271,8 @@ def play_launch():
     )
 
     fld_save = os.path.join(
-        # OUTPUT_FLD, 'Play_2018_300d_30s_scaled1',
-        OUTPUT_FLD, 'debug',
+        OUTPUT_FLD, 'Play_2018_300d_30s_both_scaled3',
+        # OUTPUT_FLD, 'debug',
     )
 
     # model_type = 'pretrained'

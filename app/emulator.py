@@ -31,7 +31,7 @@ class Transaction(object):
         self.sale = sale
 
 
-class Environment(object):
+class Environment(ABC):
     @abstractmethod
     def reset(self, *args, **kwargs):
         pass
@@ -337,24 +337,20 @@ class PlayMarket(Environment):
     def slots(self):
         slots_ = np.zeros((self.max_slots, 1), dtype=np.float32)
         for i, t in enumerate(self.transactions):
-            slots_[i] = t.price
+            slots_[i] = t.sale
         return slots_
 
     def get_state(self, *args, **kwargs):
         start_i = self.t - self.window_state + 1
         end_i = self.t + 1
-        state = self.prices[start_i:end_i].copy()
-        # (can't buy, can't sale) pair
-        # state = np.append(state, [
-        #     len(self.transactions) == self.max_slots,
-        #     len(self.transactions) == 0,
-        # ])
-        slots = np.zeros((self.max_slots, 1), dtype=np.float32)
-        for i, t in enumerate(self.transactions):
-            slots[i] = t.price
+        state_buy = self.prices[start_i:end_i, 0].copy()
+        state_sale = self.prices[start_i:end_i, 1].copy()
 
-        # return np.hstack((state, slots)).copy()
-        state = np.append(state, slots)
+        slots = np.zeros(self.max_slots, dtype=np.float32)
+        for i, t in enumerate(self.transactions):
+            slots[i] = t.sale
+
+        state = np.concatenate((state_buy, state_sale, slots))
         return np.expand_dims(state, axis=1)
 
     def get_valid_actions(self):
@@ -388,7 +384,7 @@ class PlayMarket(Environment):
             self.transactions.append(slot)
             reward = -slot.sale
         elif action == 2:  # idle
-            reward = -0.2  # todo (misha): is this a random?
+            reward = lib.IDLE_REWARD
         else:
             raise ValueError('No such action: %s' % action)
 
