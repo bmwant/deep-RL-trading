@@ -288,11 +288,6 @@ class Market(Environment):
         return sum([t.buy for t in self.transactions])
 
 
-class PlayTransaction(object):
-    def __init__(self, price: float):
-        self.price = price
-
-
 class PlayMarket(Environment):
     def __init__(self, sampler, window_state: int):
         self.sampler = sampler
@@ -376,16 +371,22 @@ class PlayMarket(Environment):
     def step(self, action, verbose=True):
         if action == 0:  # sell
             slot = self.transactions.popleft()
+            # lower price when we are selling
             price = self.prices[self.t][0]
-            diff = price - slot.price  # profit value
+            # the price we were buying at
+            diff = price - slot.sale  # profit value
+            # todo (misha): it's relative, not absolute
             self._profit_abs += diff
             reward = price
         elif action == 1:  # buy
-            slot = PlayTransaction(price=self.prices[self.t][0])
+            slot = Transaction(
+                buy=self.prices[self.t][0],
+                sale=self.prices[self.t][1],
+            )
             self.transactions.append(slot)
-            reward = -slot.price
+            reward = -slot.sale
         elif action == 2:  # idle
-            reward = -0.2
+            reward = -0.2  # todo (misha): is this a random?
         else:
             raise ValueError('No such action: %s' % action)
 
