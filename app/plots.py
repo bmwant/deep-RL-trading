@@ -5,6 +5,8 @@ import matplotlib.colors as mcolors
 import numpy as np
 import pandas as pd
 
+from app.lib import ACTIONS
+
 
 def plot_state_prices_window(data):
     x_ticks = np.arange(0, len(data) + 1, step=1)
@@ -87,7 +89,15 @@ def show_episode_chart(
 
 def show_episodes_chart(
     *,
+    n_episodes: int,
+    safe_total_rewards,
+    ma_safe_total_rewards,
+    explored_total_rewards,
+    ma_explored_total_rewards,
     explorations: List[float],
+    safe_total_actions: List[int],
+    ma_window: int,
+    save_path=None,
 ):
     """
     https://jakevdp.github.io/PythonDataScienceHandbook/04.08-multiple-subplots.html#plt.GridSpec:-More-Complicated-Arrangements
@@ -95,28 +105,48 @@ def show_episodes_chart(
     grid = plt.GridSpec(3, 2, wspace=0.4, hspace=0.3)
     fig = plt.figure(figsize=(10, 8))
     ax1 = fig.add_subplot(grid[0, :])
+    ax1.set_title('Total episodes: %d. MA window: %d' % (n_episodes, ma_window))
+    ax1.axhline(y=0, color='lightgrey', linestyle='--')
+    x_ticks = np.arange(n_episodes, step=10)
+    ax1.set_xticks(x_ticks)
+    # Safe rewards and moving average
+    ax1.plot(safe_total_rewards,
+             label='safe rewards', color='mediumaquamarine', linestyle=':')
+    ax1.plot(ma_safe_total_rewards, label='MA safe', color='mediumseagreen')
+    # Explored rewards and moving average
+    ax1.plot(explored_total_rewards,
+             label='explored rewards', linestyle=':', color='lightsalmon')
+    ax1.plot(ma_explored_total_rewards, label='MA explored', color='orangered')
+    ax1.legend()
 
     ax2 = fig.add_subplot(grid[1, 0])
     ax2.set_title('Exploration')
     ax2.plot(explorations)
 
     ax3 = fig.add_subplot(grid[1, 1])
-    ax3.set_title('Actions distribution')
+    ax3.set_title('Actions distribution (safe) for all episodes')
+    actions = np.array(safe_total_actions)
+    actions = actions[~np.isnan(actions)].astype(np.int32)
+    actions_bins = np.bincount(actions)
+    actions_labels = list(ACTIONS.values())
+    ax3.set_xticks(np.arange(len(actions_labels)))
+    ax3.set_xticklabels(actions_labels)
     ax3.bar(
-        np.arange(3), [7, 8, 2], align='center', width=0.8)
-    actions = ['sell', 'buy', 'hold']
-    ax3.set_xticks(np.arange(len(actions)))
-    ax3.set_xticklabels(actions)
+        np.arange(len(actions_bins)), actions_bins, align='center', width=0.8)
 
     ax4 = fig.add_subplot(grid[2, 0])
+    # Slots vacant
     ax5 = fig.add_subplot(grid[2, 1])
 
     data = [5, 3, 2, 8, 9, 10]
-    ax1.plot(data)
-
     ax5.plot(data)
+
     plt.tight_layout()
-    plt.show()
+    if save_path is None:
+        plt.show()
+    else:
+        plt.savefig(save_path)
+        plt.close()
 
 
 def show_step_chart(

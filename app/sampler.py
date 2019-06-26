@@ -8,7 +8,7 @@ from typing import Tuple
 import numpy as np
 import pandas as pd
 
-from app.lib import ROOT_DIR, DATASET_LENGTH
+from app.lib import ROOT_DIR, DEFAULT_DATASET_LENGTH
 
 
 class Sampler(object):
@@ -66,10 +66,10 @@ class PBSampler(Sampler):
         self.db = df[['buy', 'sale']].to_numpy()
         self.sample = self.__sample_db
         # number of episodes equals to number of samples available
-        self.n_db = self.db.shape[0] - DATASET_LENGTH + 1
+        self.n_db = self.db.shape[0] - DEFAULT_DATASET_LENGTH + 1
 
     def __sample_db(self) -> Tuple[np.ndarray, str]:
-        s = self.db[self.offset:DATASET_LENGTH+self.offset]
+        s = self.db[self.offset:DEFAULT_DATASET_LENGTH+self.offset]
         self.title = 'uah_to_usd_2018_{}'.format(self.offset)
         self.offset += 1
         if self.offset == self.n_db:
@@ -86,17 +86,24 @@ class PBSampler(Sampler):
 
 
 class PlaySampler(Sampler):
-    EPISODE_LENGTH = 300
-
-    def __init__(self, db_name, testing=False):
+    def __init__(
+        self,
+        db_name: str,
+        episode_length: int = DEFAULT_DATASET_LENGTH,
+        testing: bool = False,
+    ):
         super().__init__()
         self.db_name = db_name
         self.n_var = 1
         db_path = os.path.join(ROOT_DIR, 'data', 'PlaySamplerDB', db_name)
         self.load_db(db_path=db_path)
         # number of samples
-        self.n_db = self.db.shape[0] - self.EPISODE_LENGTH + 1
+        self.episode_length = episode_length
+        self.n_db = self.db.shape[0] - self.episode_length + 1
         self.testing = testing
+
+    def reset(self):
+        self.i_db = 0
 
     def load_db(self, db_path):
         self.db = np.genfromtxt(db_path, delimiter=',')
@@ -104,13 +111,13 @@ class PlaySampler(Sampler):
         self.sample = self.__sample_db
 
     def __sample_db(self, training: bool = True) -> Tuple[np.ndarray, str]:
-        if training:
-            s = self.db[:self.EPISODE_LENGTH, :]
-            self.title = self.db_name
-        else:
-            s = self.db[self.i_db:self.i_db+self.EPISODE_LENGTH, :]
-            self.i_db += 1
-            self.title = '{}_{}'.format(self.db_name, self.i_db)
+        s = self.db[self.i_db:self.i_db+self.episode_length, :]
+        self.i_db += 1
+        self.title = '{}_{}'.format(self.db_name, self.i_db)
+
+        # cycle data
+        if self.i_db == self.n_db:
+            self.i_db = 0
 
         return s, self.title
 
@@ -415,10 +422,9 @@ def test_pb_sampler():
 def test_play_sampler():
     from app.visualizer import show_state
 
-    sampler = PlaySampler('db2018_train.csv')
+    sampler = PlaySampler('uah_to_usd_2017_both_scaled_1_10.csv')
     prices, title = sampler.sample()
-    price = np.reshape(prices[:, 0], prices.shape[0])
-    print(price, price.shape)
+    print(prices, prices.shape)
     state = prices[:10]  # ten data points
     show_state(prices, state)
 

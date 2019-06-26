@@ -329,7 +329,7 @@ class PlayMarket(Environment):
 
         # assert we have required data points
         assert self.t_max - self.t + self.window_state == \
-            self.sampler.EPISODE_LENGTH
+            self.sampler.episode_length
         # todo (misha): maybe set state shape here?
         return self.get_state(), self.get_valid_actions()
 

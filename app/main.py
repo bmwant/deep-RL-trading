@@ -242,11 +242,12 @@ def custom_launch():
 def play_launch():
     from app.sampler import PlaySampler
 
-    db_name = 'uah_to_usd_2018_both_scaled_1_10.csv'
-    sampler = PlaySampler(db_name=db_name)
-    n_episode_training = 600
-    # n_episode_testing = sampler.test_samples
-    n_episode_testing = 1
+    db_name = 'uah_to_usd_2017_both_scaled_1_10.csv'
+    episode_length = 180
+    sampler = PlaySampler(db_name=db_name, episode_length=episode_length)
+    n_episode_training = 1000
+    n_episode_testing = sampler.test_samples
+    # n_episode_testing = 1
 
     window_state = 60  # num of days
     learning_rate = 1e-4
@@ -271,7 +272,7 @@ def play_launch():
     )
 
     fld_save = os.path.join(
-        OUTPUT_FLD, 'Play_2018_300d_30s_both_scaled3',
+        OUTPUT_FLD, 'Play_2017_180d_60s_both_scaled1',
         # OUTPUT_FLD, 'debug',
     )
 
@@ -314,6 +315,7 @@ def play_launch():
         )
 
     click.secho('Testing agent...', fg='green')
+    sampler.reset()
     simulator.test(
         n_episode=n_episode_testing,
         save_per_episode=1,
