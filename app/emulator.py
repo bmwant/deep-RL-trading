@@ -31,7 +31,7 @@ class Transaction(object):
         self.sale = sale
 
 
-class Environment(object):
+class Environment(ABC):
     @abstractmethod
     def reset(self, *args, **kwargs):
         pass
@@ -103,7 +103,6 @@ class Market(Environment):
         self.empty = True
 
         # Initialization fields
-        self.max_profit = 0
         self.title = ''
         self.prices = []  # ndarray for the data from sampler
         self.prices_norm = []  # ndarray for normalized price dataset
@@ -124,8 +123,6 @@ class Market(Environment):
             self.prices_norm = price / price[0] * 100
             self.t_max = len(self.prices_norm) - 1
 
-        # assuming we open positions on each time they will be successful
-        self.max_profit = find_ideal(self.prices_norm[self.t0:])
         # starting time step equals to `t0` to have `window_state`
         # history lookup
         self.t = self.t0
@@ -291,11 +288,6 @@ class Market(Environment):
         return sum([t.buy for t in self.transactions])
 
 
-class PlayTransaction(object):
-    def __init__(self, price: float):
-        self.price = price
-
-
 class PlayMarket(Environment):
     def __init__(self, sampler, window_state: int):
         self.sampler = sampler
@@ -307,11 +299,10 @@ class PlayMarket(Environment):
         self.title: str = ''
         self.prices = []
 
-        # todo (misha): remove me
-        self.max_profit = 1
-
         # self.state_shape = (window_state, self.sampler.n_var+1)
-        self.state_shape = (window_state + self.max_slots, 1)
+        # buy/sale prices window +
+        # prices for slots when purchasing
+        self.state_shape = (2*window_state + self.max_slots, 1)
         # labels for actions
         self.action_labels = [
             'sell',
@@ -324,8 +315,11 @@ class PlayMarket(Environment):
         self.t0 = window_state - 1
         self.t_max = None
 
+        self._profit_abs = 0
+
     def reset(self, rand_price=True, training=True):
         self.transactions = deque(maxlen=self.max_slots)
+        self._profit_abs = 0
         if rand_price:
             self.prices, self.title = self.sampler.sample(training)
             # self.prices = np.reshape(prices[:, 0], prices.shape[0]).copy()
@@ -335,25 +329,28 @@ class PlayMarket(Environment):
 
         # assert we have required data points
         assert self.t_max - self.t + self.window_state == \
-            self.sampler.EPISODE_LENGTH
+            self.sampler.episode_length
         # todo (misha): maybe set state shape here?
         return self.get_state(), self.get_valid_actions()
+
+    @property
+    def slots(self):
+        slots_ = np.zeros((self.max_slots, 1), dtype=np.float32)
+        for i, t in enumerate(self.transactions):
+            slots_[i] = t.sale
+        return slots_
 
     def get_state(self, *args, **kwargs):
         start_i = self.t - self.window_state + 1
         end_i = self.t + 1
-        state = self.prices[start_i:end_i].copy()
-        # (can't buy, can't sale) pair
-        # state = np.append(state, [
-        #     len(self.transactions) == self.max_slots,
-        #     len(self.transactions) == 0,
-        # ])
-        slots = np.zeros((self.max_slots, 1), dtype=np.float32)
-        for i, t in enumerate(self.transactions):
-            slots[i] = t.price
+        state_buy = self.prices[start_i:end_i, 0].copy()
+        state_sale = self.prices[start_i:end_i, 1].copy()
 
-        # return np.hstack((state, slots)).copy()
-        state = np.append(state, slots)
+        slots = np.zeros(self.max_slots, dtype=np.float32)
+        for i, t in enumerate(self.transactions):
+            slots[i] = t.sale
+
+        state = np.concatenate((state_buy, state_sale, slots))
         return np.expand_dims(state, axis=1)
 
     def get_valid_actions(self):
@@ -372,15 +369,22 @@ class PlayMarket(Environment):
     def step(self, action, verbose=True):
         if action == 0:  # sell
             slot = self.transactions.popleft()
+            # lower price when we are selling
             price = self.prices[self.t][0]
-            diff = price - slot.price  # profit value
+            # the price we were buying at
+            diff = price - slot.sale  # profit value
+            # todo (misha): it's relative, not absolute
+            self._profit_abs += diff
             reward = price
         elif action == 1:  # buy
-            slot = PlayTransaction(price=self.prices[self.t][0])
+            slot = Transaction(
+                buy=self.prices[self.t][0],
+                sale=self.prices[self.t][1],
+            )
             self.transactions.append(slot)
-            reward = -slot.price
+            reward = -slot.sale
         elif action == 2:  # idle
-            reward = -0.2
+            reward = lib.IDLE_REWARD
         else:
             raise ValueError('No such action: %s' % action)
 

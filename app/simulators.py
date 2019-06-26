@@ -5,6 +5,7 @@ import click
 
 from app.lib import makedirs
 from app.lib import DEFAULT_MA_WINDOW
+from app.plots import show_step_chart, show_episode_chart, show_episodes_chart
 from app.visualizer import show_step
 
 
@@ -19,7 +20,7 @@ class Simulator(object):
         self.ma_window = ma_window
         self.visualizer = visualizer
         self.fld_save = fld_save  # directory where to save results
-        self._best_result = 0
+        self._best_result = float('-inf')
 
     def play_one_episode(
         self,
@@ -41,20 +42,16 @@ class Simulator(object):
         actions = [np.nan] * env_t  # history of previous actions
         states = [None] * env_t  # history of previous states
         prev_cum_rewards = 0.
-
+        extra = {}  # extra data used for charts
         while not done:
             action = self.agent.act(state, exploration, valid_actions)
             next_state, reward, done, valid_actions = self.env.step(
-                action, verbose=verbose,)
+                action,
+                verbose=verbose,
+            )
             # next_state, reward, done, valid_actions = self.env.step_verbose(action)
 
             cum_rewards.append(prev_cum_rewards+reward)
-            # import ipdb; ipdb.set_trace()
-            # print('Step', self.env.t)
-            # print('Reward', reward)
-            # print(cum_rewards)
-            # print('='*30)
-            # print()
             prev_cum_rewards = cum_rewards[-1]
             actions.append(action)
             states.append(next_state)
@@ -64,7 +61,21 @@ class Simulator(object):
                 self.agent.replay()
 
             state = next_state
-        return cum_rewards, actions, states
+            if verbose and not training:
+                steps_path = os.path.join(self.fld_save, 'steps')
+                makedirs(steps_path)
+                save_path = os.path.join(
+                    steps_path, 'step_{:03d}'.format(self.env.t))
+                show_step_chart(
+                    prices=self.env.prices,
+                    slots=self.env.slots.transpose(),
+                    actions=actions,
+                    step=self.env.t,
+                    window_state=self.env.window_state,
+                    save_path=save_path,
+                )
+        extra['profit'] = self.env._profit_abs
+        return cum_rewards, actions, states, extra
 
     def train(
         self,
@@ -75,6 +86,7 @@ class Simulator(object):
         exploration_decay=0.995,
         exploration_min=0.01,
         verbose=True,
+        chart_per_episode=10,
     ):
         fld_model = os.path.join(self.fld_save, 'model')
         makedirs(fld_model)	 # don't overwrite if already exists
@@ -85,38 +97,56 @@ class Simulator(object):
         fld_save = os.path.join(self.fld_save, 'training')
         makedirs(fld_save)
 
-        safe_total_rewards = []
-        explored_total_rewards = []
-        explorations = []  # store to visualize later
-        path_record = os.path.join(fld_save, 'record.csv')
+        # Store statistics, used for visualization
+        safe_total_rewards = []  # for all episodes
+        explored_total_rewards = []  # for all episodes
+        explorations = []  # for all episodes
+        ma_explored_total_rewards = []  # updated after each episode
+        ma_safe_total_rewards = []  # updated after each episode
+        safe_total_actions = []
 
+        path_record = os.path.join(fld_save, 'record.csv')
+        episodes_path = os.path.join(fld_save, 'episodes')
+        makedirs(episodes_path)
         with open(path_record, 'w') as f:
             f.write('episode,game,exploration,explored_reward,'
                     'safe_reward,MA_explored,MA_safe\n')
 
         for n in range(n_episode):
             print('{}/{} training...'.format(n, n_episode))
+            extra = {}
             exploration = max(exploration_min, exploration * exploration_decay)
             explorations.append(exploration)
-            explored_cum_rewards, explored_actions, _ = self.play_one_episode(
-                exploration,
-                rand_price=True,  # use new data for each new episode
-                verbose=True,
+            explored_cum_rewards, explored_actions, _, explored_extra = \
+                self.play_one_episode(
+                    exploration,
+                    rand_price=True,  # use new data for each new episode
+                    verbose=True,
             )
+            extra['profit_explored'] = explored_extra['profit']
+            extra['reward_explored'] = explored_cum_rewards[-1]
             explored_total_rewards.append(explored_cum_rewards[-1])
 
             # Safe values: exploration is completely disabled
-            safe_cum_rewards, safe_actions, _ = self.play_one_episode(
-                exploration=0,  # exploit existing model
-                training=False,  # do not append to replay buffer
-                rand_price=False,  # reuse previous sampled prices
+            safe_cum_rewards, safe_actions, _, safe_extra = \
+                self.play_one_episode(
+                    exploration=0,  # exploit existing model
+                    training=False,  # do not append to replay buffer
+                    rand_price=False,  # reuse previous sampled prices
             )
+            extra['profit_safe'] = safe_extra['profit']
+            extra['reward_safe'] = safe_cum_rewards[-1]
             safe_total_rewards.append(safe_cum_rewards[-1])
+            safe_total_actions.extend(safe_actions)
 
-            MA_total_rewards = np.median(
+            # for all episodes
+            ma_explored_total_reward = np.median(
                 explored_total_rewards[-self.ma_window:])
-            MA_safe_total_rewards = np.median(
+            ma_explored_total_rewards.append(ma_explored_total_reward)
+            # for all episodes
+            ma_safe_total_reward = np.median(
                 safe_total_rewards[-self.ma_window:])
+            ma_safe_total_rewards.append(ma_safe_total_reward)
 
             ss = [
                 str(n),
@@ -124,8 +154,8 @@ class Simulator(object):
                 '%.1f' % (exploration*100.),  # exploration factor
                 '%.1f' % (explored_total_rewards[-1]),  # explored rewards
                 '%.1f' % (safe_total_rewards[-1]),  # safe rewards
-                '%.1f' % MA_total_rewards,  # MA explored rewards
-                '%.1f' % MA_safe_total_rewards,  # MA safe rewards
+                '%.1f' % ma_explored_total_reward,  # MA explored rewards
+                '%.1f' % ma_safe_total_reward,  # MA safe rewards
             ]
 
             with open(path_record, 'a') as f:
@@ -134,7 +164,6 @@ class Simulator(object):
             last_reward = safe_cum_rewards[-1]
             profit = last_reward
             if verbose:
-                # print('Hanging', self.env.hanging)
                 header = [
                     '#',
                     'Data used',
@@ -157,8 +186,8 @@ class Simulator(object):
                     '%.1f' % (exploration * 100.),
                     explored_rewards,
                     safe_rewards,
-                    '%.2f' % MA_total_rewards,
-                    '%.2f' % MA_safe_total_rewards,
+                    '%.2f' % ma_explored_total_reward,
+                    '%.2f' % ma_safe_total_reward,
                     # '%.2f' % profit,
                 ]]
                 show_step(data=data, header=header)
@@ -169,22 +198,29 @@ class Simulator(object):
                 self.agent.save(fld_model)
                 self._best_result = last_reward
 
-                """
-                self.visualizer.plot_a_episode(
-                    self.env, self.agent.model, 
-                    explored_cum_rewards, explored_actions,
-                    safe_cum_rewards, safe_actions,
-                    os.path.join(fld_save, 'episode_%i.png'%(n)))
-                """
-
-        if self.visualizer is not None:
-            print('Plotting episodes', fld_save)
-            self.visualizer.plot_episodes(
-                explored_total_rewards,
-                safe_total_rewards,
-                explorations,
-                os.path.join(fld_save, 'total_rewards.png'),
-            )
+            if n % chart_per_episode == 0:
+                save_path = os.path.join(episodes_path, 'episode_{:04d}'.format(n))
+                show_episode_chart(
+                    episode=n,
+                    safe_actions=safe_actions,
+                    safe_rewards=safe_cum_rewards,
+                    explored_rewards=explored_cum_rewards,
+                    exploration=exploration,
+                    extra=extra,
+                    save_path=save_path,
+                )
+        save_path = os.path.join(episodes_path, 'summary')
+        show_episodes_chart(
+            n_episodes=n_episode,
+            safe_total_rewards=safe_total_rewards,
+            ma_safe_total_rewards=ma_safe_total_rewards,
+            explored_total_rewards=explored_total_rewards,
+            ma_explored_total_rewards=ma_explored_total_rewards,
+            explorations=explorations,
+            safe_total_actions=safe_total_actions,
+            ma_window=self.ma_window,
+            save_path=save_path,
+        )
 
     def test(
         self, n_episode, *, save_per_episode=10, subfld='testing', verbose=True,
@@ -204,11 +240,14 @@ class Simulator(object):
         for n in range(n_episode):
             print('{}/{} testing...'.format(n, n_episode))
 
-            safe_cum_rewards, safe_actions, _ = self.play_one_episode(
+            save_all_episodes = False
+            if n == 0:
+                save_all_episodes = True
+            safe_cum_rewards, safe_actions, _, extra = self.play_one_episode(
                 0,
                 training=False,
                 rand_price=True,
-                verbose=verbose,
+                verbose=save_all_episodes,
             )
 
             last_reward = safe_cum_rewards[-1]
@@ -247,25 +286,30 @@ class Simulator(object):
                 show_step(data=data, header=header)
 
             if n % save_per_episode == 0:
-                # print('saving results...')
                 pass
 
-            if self.visualizer is not None:
-                self.visualizer.plot_a_episode(
-                    self.env,
-                    self.agent.model,
-                    [np.nan]*len(safe_cum_rewards),
-                    [np.nan]*len(safe_actions),
-                    safe_cum_rewards,
-                    safe_actions,
-                    os.path.join(fld_save, 'episode_%i.png' % n)
-                )
-                """
-                self.visualizer.plot_episodes(
-                    None, safe_total_rewards, None, 
-                    os.path.join(fld_save, 'total_rewards.png'),
-                    MA_window)
-                """
+
+def linearly_decaying_epsilon(
+    decay_period: float,
+    step: int,
+    warmup_steps: int,
+    epsilon_min: float
+):
+    """
+    Returns the current epsilon for the agent's epsilon-greedy policy.
+    Begin at 1. until warmup_steps steps have been taken; then
+    Linearly decay epsilon from 1. to epsilon in decay_period steps; and then
+    Use epsilon from there on.
+    Args:
+        decay_period: the period over which epsilon is decayed.
+        step: the number of training steps completed so far.
+        warmup_steps: the number of steps taken before epsilon is decayed.
+        epsilon_min: the final value to which to decay the epsilon parameter.
+    """
+    steps_left = decay_period + warmup_steps - step
+    bonus = (1.0 - epsilon_min) * steps_left / decay_period
+    bonus = np.clip(bonus, 0., 1.0 - epsilon_min)
+    return epsilon_min + bonus
 
 
 if __name__ == '__main__':

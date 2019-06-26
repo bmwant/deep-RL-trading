@@ -74,8 +74,8 @@ class Visualizer(object):
         ax_price.plot(safe_cum_rewards, 'r', label='safe P&L')
         ax_price.legend(loc='best', frameon=False)
         ax_price.set_title(
-            env.title+', ideal: %.1f, safe: %.1f, explored: %1.f' % (
-            env.max_profit, safe_cum_rewards[-1], explored_cum_rewards[-1]))
+            '%s, safe: %.1f, explored: %1.f' %
+            (env.title, safe_cum_rewards[-1], explored_cum_rewards[-1]))
 
         ax_action.plot(explored_actions, 'b', label='explored')
         ax_action.plot(safe_actions, 'r', label='safe', linewidth=2)
@@ -108,7 +108,7 @@ class Visualizer(object):
         explorations,
         fig_path,
     ):
-        f = plt.figure(figsize=(14, 10))	 # width, height in inch (100 pixel)
+        f = plt.figure(figsize=(14, 10))  # width, height in inch (100 pixel)
         if explored_total_rewards is None:
             f, ax_reward = plt.subplots()
         else:
@@ -136,7 +136,6 @@ class Visualizer(object):
         ax_reward.plot(tt, std, 'r--', label='safe std', linewidth=2)
 
         ax_reward.axhline(y=0, color='k', linestyle=':')
-        #ax_reward.axhline(y=60, color='k', linestyle=':')
         ax_reward.set_ylabel('total reward')
         ax_reward.legend(loc='best', frameon=False)
         ax_reward.yaxis.tick_right()

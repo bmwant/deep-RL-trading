@@ -1,3 +1,7 @@
+## Moved
+
+Here [keras-trader](https://github.com/bmwant/keras-trader)
+
 ## Playing trading games with deep RL
 
 This repo is the code for this [paper](https://arxiv.org/abs/1803.03916).
@@ -43,6 +47,16 @@ $ python app/sampler.py
 
 ```bash
 $ caffeinate -sid python app/main.py
+```
+
+
+### Utils
+
+* Convert data (scale within a range)
+
+```bash
+$ python app/converter.py data/PBSamplerDB/uah_to_usd_2018.csv \
+    data/uah_to_usd_2018_scaled_1_10.csv
 ```
 
 ### Authors
