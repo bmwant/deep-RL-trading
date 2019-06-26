@@ -10,6 +10,12 @@ DATASET_LENGTH = 180  # default to 6 months
 DEFAULT_MA_WINDOW = 100
 MAX_TRANSACTIONS = 10
 
+ACTIONS = {
+    0: 'sell',
+    1: 'buy',
+    2: 'idle',
+}
+
 
 def makedirs(fld):
     if not os.path.exists(fld):

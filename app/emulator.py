@@ -300,7 +300,9 @@ class PlayMarket(Environment):
         self.prices = []
 
         # self.state_shape = (window_state, self.sampler.n_var+1)
-        self.state_shape = (window_state + self.max_slots, 1)
+        # buy/sale prices window +
+        # prices for slots when purchasing
+        self.state_shape = (2*window_state + self.max_slots, 1)
         # labels for actions
         self.action_labels = [
             'sell',

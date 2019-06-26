@@ -29,11 +29,17 @@ def convert(in_file, out_file):
     click.secho('Reading data from %s...' % in_file.name, fg='blue')
     df = pd.read_csv(in_file)
 
-    rate = df[['nb']].to_numpy(dtype=np.float32)
-    scaled_rate = minmax_scale(rate, feature_range=(1, 10))
+    rate = df[['buy', 'sale']].to_numpy(dtype=np.float32)
+    # both columns to single feature
+    rates_feature = np.hstack((rate[:, 0], rate[:, 1]))
+    scaled_feature = minmax_scale(rates_feature, feature_range=(1, 10))
 
+    buy_scaled, sale_scaled = np.array_split(scaled_feature, 2)
+    buy_scaled_col = np.expand_dims(buy_scaled, axis=1)
+    sale_scaled_col = np.expand_dims(sale_scaled, axis=1)
+    scaled_rates = np.hstack((buy_scaled_col, sale_scaled_col))
     click.secho('Writing scaled data to %s...' % out_file.name, fg='yellow')
-    np.savetxt(out_file, scaled_rate, fmt='%.4f', delimiter=',')
+    np.savetxt(out_file, scaled_rates, fmt='%.4f', delimiter=',')
     click.secho('Done.', fg='green')
 
 
