@@ -3,6 +3,7 @@ from typing import List
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import numpy as np
+import pandas as pd
 
 
 def plot_state_prices_window(data):
@@ -23,22 +24,109 @@ def plot_state_prices_window(data):
     plt.show()
 
 
-def show_episode_chart():
-    fig, (ax1, ax2, ax3, ax4) = plt.subplots(
-        3, 1,
-        sharex=False, sharey=False,
-        figsize=(10, 8),
-    )
+def show_episode_chart(
+    *,
+    episode: int = 0,
+    safe_actions: List[int],
+    safe_rewards: List[float],
+    explored_rewards: List[float],
+    exploration: float,
+    extra: dict,
+    ma_window: int = 30,
+    save_path=None,
+):
+    grid = plt.GridSpec(2, 2, wspace=0.4, hspace=0.3)
+    fig = plt.figure(figsize=(10, 8))
+    x_ticks = np.arange(300, step=15)
+    ax1 = fig.add_subplot(grid[0, :])
+    ax1.set_title('Episode #%d. MA window: %d' % (episode, ma_window))
+    ax1.axhline(y=0, color='lightgrey', linestyle='--')
+    ax1.set_xticks(x_ticks)
+    # Safe rewards and moving average
+    ax1.plot(safe_rewards,
+             label='safe rewards', color='mediumaquamarine', linestyle=':')
+    ma_safe = pd.Series(np.array(safe_rewards)) \
+        .rolling(window=ma_window, min_periods=1).median()
+    ax1.plot(ma_safe, label='MA safe', color='mediumseagreen')
+    # Explored rewards and moving average
+    ax1.plot(explored_rewards,
+             label='explored rewards', linestyle=':', color='lightsalmon')
+    ma_explored = pd.Series(np.array(explored_rewards)) \
+        .rolling(window=ma_window, min_periods=1).median()
+    ax1.plot(ma_explored, label='MA explored', color='orangered')
+    ax1.legend()
+
+    ax2 = fig.add_subplot(grid[1, 0])
+    ax2.axis([0, 10, 0, 10])
+    ax2.axis('off')
+    ax2.set_title('Episode data')
+    ax2.text(0, 9, 'Total profit (safe): %.2f' % extra['profit_safe'])
+    ax2.text(0, 8, 'Total profit (explored): %.2f' % extra['profit_explored'])
+    ax2.text(0, 7, 'Total reward (safe): %.2f' % extra['reward_safe'])
+    ax2.text(0, 6, 'Total reward (explored): %.2f' % extra['reward_explored'])
+    ax2.text(0, 5, 'Exploration: %.2f' % exploration)
+
+    ax3 = fig.add_subplot(grid[1, 1])
+    ax3.set_title('Actions distribution')
+    actions = np.array(safe_actions)
+    actions = actions[~np.isnan(actions)].astype(np.int32)
+    actions_bins = np.bincount(actions)
+    actions_labels = ['sell', 'buy', 'hold']
+    ax3.set_xticks(np.arange(len(actions_labels)))
+    ax3.set_xticklabels(actions_labels)
+    ax3.bar(
+        np.arange(len(actions_bins)), actions_bins, align='center', width=0.8)
+
+    plt.tight_layout()
+    if save_path is None:
+        plt.show()
+    else:
+        plt.savefig(save_path)
+        plt.close()
+
+
+def show_episodes_chart(
+    *,
+    explorations: List[float],
+):
+    """
+    https://jakevdp.github.io/PythonDataScienceHandbook/04.08-multiple-subplots.html#plt.GridSpec:-More-Complicated-Arrangements
+    """
+    grid = plt.GridSpec(3, 2, wspace=0.4, hspace=0.3)
+    fig = plt.figure(figsize=(10, 8))
+    ax1 = fig.add_subplot(grid[0, :])
+
+    ax2 = fig.add_subplot(grid[1, 0])
+    ax2.set_title('Exploration')
+    ax2.plot(explorations)
+
+    ax3 = fig.add_subplot(grid[1, 1])
+    ax3.set_title('Actions distribution')
+    ax3.bar(
+        np.arange(3), [7, 8, 2], align='center', width=0.8)
+    actions = ['sell', 'buy', 'hold']
+    ax3.set_xticks(np.arange(len(actions)))
+    ax3.set_xticklabels(actions)
+
+    ax4 = fig.add_subplot(grid[2, 0])
+    ax5 = fig.add_subplot(grid[2, 1])
+
+    data = [5, 3, 2, 8, 9, 10]
+    ax1.plot(data)
+
+    ax5.plot(data)
+    plt.tight_layout()
+    plt.show()
 
 
 def show_step_chart(
-        *,
-        prices,
-        slots,
-        actions,
-        step: int = 0,
-        window_state: int = 30,
-        save_path=None,
+    *,
+    prices,
+    slots,
+    actions,
+    step: int = 0,
+    window_state: int = 30,
+    save_path=None,
 ):
     fig, (ax1, ax2, ax3, ax4) = plt.subplots(
         4, 1,

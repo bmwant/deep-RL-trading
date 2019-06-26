@@ -103,7 +103,6 @@ class Market(Environment):
         self.empty = True
 
         # Initialization fields
-        self.max_profit = 0
         self.title = ''
         self.prices = []  # ndarray for the data from sampler
         self.prices_norm = []  # ndarray for normalized price dataset
@@ -124,8 +123,6 @@ class Market(Environment):
             self.prices_norm = price / price[0] * 100
             self.t_max = len(self.prices_norm) - 1
 
-        # assuming we open positions on each time they will be successful
-        self.max_profit = find_ideal(self.prices_norm[self.t0:])
         # starting time step equals to `t0` to have `window_state`
         # history lookup
         self.t = self.t0
@@ -307,9 +304,6 @@ class PlayMarket(Environment):
         self.title: str = ''
         self.prices = []
 
-        # todo (misha): remove me
-        self.max_profit = 1
-
         # self.state_shape = (window_state, self.sampler.n_var+1)
         self.state_shape = (window_state + self.max_slots, 1)
         # labels for actions
@@ -324,8 +318,11 @@ class PlayMarket(Environment):
         self.t0 = window_state - 1
         self.t_max = None
 
+        self._profit_abs = 0
+
     def reset(self, rand_price=True, training=True):
         self.transactions = deque(maxlen=self.max_slots)
+        self._profit_abs = 0
         if rand_price:
             self.prices, self.title = self.sampler.sample(training)
             # self.prices = np.reshape(prices[:, 0], prices.shape[0]).copy()
@@ -381,6 +378,7 @@ class PlayMarket(Environment):
             slot = self.transactions.popleft()
             price = self.prices[self.t][0]
             diff = price - slot.price  # profit value
+            self._profit_abs += diff
             reward = price
         elif action == 1:  # buy
             slot = PlayTransaction(price=self.prices[self.t][0])

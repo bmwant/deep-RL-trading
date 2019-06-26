@@ -74,8 +74,8 @@ class Visualizer(object):
         ax_price.plot(safe_cum_rewards, 'r', label='safe P&L')
         ax_price.legend(loc='best', frameon=False)
         ax_price.set_title(
-            env.title+', ideal: %.1f, safe: %.1f, explored: %1.f' % (
-            env.max_profit, safe_cum_rewards[-1], explored_cum_rewards[-1]))
+            '%s, safe: %.1f, explored: %1.f' %
+            (env.title, safe_cum_rewards[-1], explored_cum_rewards[-1]))
 
         ax_action.plot(explored_actions, 'b', label='explored')
         ax_action.plot(safe_actions, 'r', label='safe', linewidth=2)

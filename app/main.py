@@ -244,7 +244,7 @@ def play_launch():
 
     db_name = 'uah_to_usd_2018_scaled_1_10.csv'
     sampler = PlaySampler(db_name=db_name)
-    n_episode_training = 500
+    n_episode_training = 50
     # n_episode_testing = sampler.test_samples
     n_episode_testing = 1
 
@@ -271,7 +271,8 @@ def play_launch():
     )
 
     fld_save = os.path.join(
-        OUTPUT_FLD, 'Play_2018_300d_30s_scaled1'
+        # OUTPUT_FLD, 'Play_2018_300d_30s_scaled1',
+        OUTPUT_FLD, 'debug',
     )
 
     # model_type = 'pretrained'
@@ -309,6 +310,7 @@ def play_launch():
             exploration_init=exploration_init,
             exploration_decay=exploration_decay,
             exploration_min=exploration_min,
+            chart_per_episode=10,
         )
 
     click.secho('Testing agent...', fg='green')
